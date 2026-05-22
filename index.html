@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>คลินิกแพทย์กิตติชัย — จองคิวออนไลน์</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Sarabun','Noto Sans Thai',sans-serif;background:#f0f9ff}input,textarea,select,button{font-family:inherit}#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e0f2fe,#f0fdf4)}.spin{width:48px;height:48px;border:5px solid #e0f2fe;border-top-color:#0ea5e9;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}@keyframes spin{to{transform:rotate(360deg)}}#loading p{color:#0369a1;font-size:16px;font-weight:600}</style>
 </head>
 <body>
@@ -2606,6 +2606,24 @@ function generateBookingImage({
 // ADMIN PANEL
 // ─────────────────────────────────────────────────────────────
 const ADMIN_PIN = "kc88888888";
+
+// แปลงวันที่ที่อาจมาเป็น ISO / yyyy-mm-dd / ภาษาไทย ให้เป็นภาษาไทยเสมอ
+function formatBookingDate(dateStr) {
+  if (!dateStr) return "-";
+  // ถ้าเป็น ISO หรือ yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const [y, m, d] = dateStr.substring(0, 10).split("-").map(Number);
+    const thYear = y + 543;
+    const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    return `${d} ${monthNames[m - 1]} ${thYear}`;
+  }
+  // ถ้าเป็น ISO string เต็ม เช่น 2026-05-22T17:00:00.000Z
+  if (dateStr.includes("T")) {
+    return formatBookingDate(dateStr.substring(0, 10));
+  }
+  // ถ้าเป็นภาษาไทยอยู่แล้ว
+  return dateStr;
+}
 const DAYS_OPEN_DEFAULT = {
   0: true,
   1: true,
@@ -2992,7 +3010,7 @@ function AdminPanel({
       color: "#475569",
       lineHeight: 1.8
     }
-  }, /*#__PURE__*/React.createElement("div", null, "\uD83E\uDE7A ", b.service), /*#__PURE__*/React.createElement("div", null, "\uD83D\uDCC5 ", b.date, " \xA0\uD83D\uDD50 ", b.time), /*#__PURE__*/React.createElement("div", null, "\uD83D\uDCDE ", b.phone), b.note && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, "\uD83E\uDE7A ", b.service), /*#__PURE__*/React.createElement("div", null, "\uD83D\uDCC5 ", formatBookingDate(b.date), " \xA0\uD83D\uDD50 ", b.time), /*#__PURE__*/React.createElement("div", null, "\uD83D\uDCDE ", b.phone), b.note && /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#64748b"
     }
@@ -4131,7 +4149,7 @@ function AdminPanel({
   }, {
     icon: "📅",
     label: "วันที่",
-    value: selectedBooking.date || "-"
+    value: formatBookingDate(selectedBooking.date)
   }, {
     icon: "🕐",
     label: "เวลา",
