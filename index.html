@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>คลินิกแพทย์กิตติชัย — จองคิวออนไลน์</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Sarabun','Noto Sans Thai',sans-serif;background:#f0f9ff}input,textarea,select,button{font-family:inherit}#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e0f2fe,#f0fdf4)}.spin{width:48px;height:48px;border:5px solid #e0f2fe;border-top-color:#0ea5e9;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}@keyframes spin{to{transform:rotate(360deg)}}#loading p{color:#0369a1;font-size:16px;font-weight:600}</style>
@@ -41,8 +40,7 @@ render:a}};c.isValidElement=M;c.lazy=function(a){return{$$typeof:Aa,_payload:{_s
 c.useEffect=function(a,b){return g.current.useEffect(a,b)};c.useId=function(){return g.current.useId()};c.useImperativeHandle=function(a,b,c){return g.current.useImperativeHandle(a,b,c)};c.useInsertionEffect=function(a,b){return g.current.useInsertionEffect(a,b)};c.useLayoutEffect=function(a,b){return g.current.useLayoutEffect(a,b)};c.useMemo=function(a,b){return g.current.useMemo(a,b)};c.useReducer=function(a,b,c){return g.current.useReducer(a,b,c)};c.useRef=function(a){return g.current.useRef(a)};
 c.useState=function(a){return g.current.useState(a)};c.useSyncExternalStore=function(a,b,c){return g.current.useSyncExternalStore(a,b,c)};c.useTransition=function(){return g.current.useTransition()};c.version="18.3.1"});
 })();
-</script>
-<script>/**
+</script><script>/**
  * @license React
  * react-dom.production.min.js
  *
@@ -2607,22 +2605,35 @@ function generateBookingImage({
 // ─────────────────────────────────────────────────────────────
 const ADMIN_PIN = "kc88888888";
 
-// แปลงวันที่ที่อาจมาเป็น ISO / yyyy-mm-dd / ภาษาไทย ให้เป็นภาษาไทยเสมอ
+// แปลงวันที่ทุกรูปแบบให้เป็นภาษาไทยเสมอ
 function formatBookingDate(dateStr) {
   if (!dateStr) return "-";
-  // ถ้าเป็น ISO หรือ yyyy-mm-dd
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-    const [y, m, d] = dateStr.substring(0, 10).split("-").map(Number);
-    const thYear = y + 543;
-    const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-    return `${d} ${monthNames[m - 1]} ${thYear}`;
+  const s = String(dateStr);
+  const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+  // yyyy-mm-dd หรือ ISO T format
+  const isoM = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoM) {
+    const y = parseInt(isoM[1]),
+      m = parseInt(isoM[2]),
+      d = parseInt(isoM[3]);
+    return `${d} ${months[m - 1]} ${y + 543}`;
   }
-  // ถ้าเป็น ISO string เต็ม เช่น 2026-05-22T17:00:00.000Z
-  if (dateStr.includes("T")) {
-    return formatBookingDate(dateStr.substring(0, 10));
+
+  // "Mon May 25 2026 ..." รูปแบบ Date.toString() จาก Apps Script
+  const dtM = s.match(/([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})/);
+  if (dtM) {
+    const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const mi = enMonths.findIndex(m => dtM[1].startsWith(m));
+    if (mi >= 0) {
+      const y = parseInt(dtM[3]),
+        d = parseInt(dtM[2]);
+      return `${d} ${months[mi]} ${y + 543}`;
+    }
   }
-  // ถ้าเป็นภาษาไทยอยู่แล้ว
-  return dateStr;
+
+  // ภาษาไทยอยู่แล้ว
+  return s;
 }
 const DAYS_OPEN_DEFAULT = {
   0: true,
