@@ -2620,14 +2620,26 @@ function formatBookingDate(dateStr) {
     return `${d} ${months[m - 1]} ${y + 543}`;
   }
 
-  // "Mon May 25 2026 ..." รูปแบบ Date.toString() จาก Apps Script
-  const dtM = s.match(/([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})/);
+  // "Wed May 27 2026 ..." หรือ "Mon May 25 2026 ..." รูปแบบ Date.toString()
+  // format: DayName MonthName DayNum Year ...
+  const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  // จับ MonthName DayNum Year
+  const dtM = s.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
   if (dtM) {
-    const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const mi = enMonths.findIndex(m => dtM[1].startsWith(m));
+    const mi = enMonths.findIndex(mn => dtM[1].startsWith(mn));
     if (mi >= 0) {
       const y = parseInt(dtM[3]),
         d = parseInt(dtM[2]);
+      return `${d} ${months[mi]} ${y + 543}`;
+    }
+  }
+  // fallback: จับ MonthName DayNum Year โดยไม่มีชื่อวัน
+  const dtM2 = s.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+  if (dtM2) {
+    const mi = enMonths.findIndex(mn => dtM2[1].startsWith(mn));
+    if (mi >= 0) {
+      const y = parseInt(dtM2[3]),
+        d = parseInt(dtM2[2]);
       return `${d} ${months[mi]} ${y + 543}`;
     }
   }
