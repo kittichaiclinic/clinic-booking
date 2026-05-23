@@ -1946,7 +1946,7 @@ function ClinicBooking({
     value: form.pin,
     maxLength: 4,
     inputMode: "numeric",
-    type: "text",
+    type: "tel",
     autoComplete: "off",
     name: "booking-pin",
     onChange: e => setForm(f => ({
@@ -4897,12 +4897,15 @@ const s = {
     background: "linear-gradient(90deg,#0369a1 0%,#0ea5e9 100%)",
     padding: "20px 24px",
     color: "#fff",
-    boxShadow: "0 4px 16px rgba(14,165,233,0.25)"
+    boxShadow: "0 4px 16px rgba(14,165,233,0.25)",
+    display: "flex",
+    alignItems: "center"
   },
   logoRow: {
     display: "flex",
     alignItems: "center",
-    gap: 14
+    gap: 14,
+    width: "100%"
   },
   clinicName: {
     fontSize: 20,
