@@ -993,7 +993,9 @@ function ClinicBooking({
   // ── Main Booking Flow ──
   return /*#__PURE__*/React.createElement("div", {
     style: s.page
-  }, /*#__PURE__*/React.createElement(Header, null), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Header, {
+    onCheckBooking: onCheckBooking
+  }), /*#__PURE__*/React.createElement("div", {
     style: s.stepsWrap
   }, /*#__PURE__*/React.createElement("div", {
     style: s.stepsRow
@@ -1922,7 +1924,7 @@ function ClinicBooking({
     style: s.formGroup
   }, /*#__PURE__*/React.createElement("label", {
     style: s.label
-  }, "\u0E23\u0E2B\u0E31\u0E2A PIN ", /*#__PURE__*/React.createElement("span", {
+  }, "\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E23\u0E2B\u0E31\u0E2A PIN ", /*#__PURE__*/React.createElement("span", {
     style: {
       color: "#ef4444"
     }
@@ -1940,19 +1942,13 @@ function ClinicBooking({
       textAlign: "center",
       borderColor: form.pin && form.pin.length < 4 ? "#f97316" : "#e2e8f0"
     },
-    placeholder: "\u2022 \u2022 \u2022 \u2022",
+    placeholder: "_ _ _ _",
     value: form.pin,
     maxLength: 4,
     inputMode: "numeric",
-    type: "password",
-    autoComplete: "new-password",
+    type: "text",
+    autoComplete: "off",
     name: "booking-pin",
-    onFocus: e => {
-      if (form.pin.length > 0 && form.pin.length < 4) setForm(f => ({
-        ...f,
-        pin: ""
-      }));
-    },
     onChange: e => setForm(f => ({
       ...f,
       pin: e.target.value.replace(/[^0-9]/g, "")
