@@ -2069,27 +2069,77 @@ function ClinicBooking({
   }, "\uD83D\uDD50 \u0E40\u0E25\u0E37\u0E2D\u0E01\u0E40\u0E27\u0E25\u0E32\u0E19\u0E31\u0E14\u0E2B\u0E21\u0E32\u0E22"), loadingSlots && /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#94a3b8"
+      color: "#0ea5e9",
+      fontWeight: 600,
+      display: "flex",
+      alignItems: "center",
+      gap: 4
     }
-  }, "\u23F3 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A...")), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "inline-block",
+      width: 12,
+      height: 12,
+      border: "2px solid #e0f2fe",
+      borderTopColor: "#0ea5e9",
+      borderRadius: "50%",
+      animation: "spin .6s linear infinite"
+    }
+  }), "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A...")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
     style: s.slotGrid
   }, timeSlots.map(t => {
     const taken = takenSlots.includes(t);
+    const isLoading = loadingSlots;
+    const disabled = taken || isLoading;
     return /*#__PURE__*/React.createElement("div", {
       key: t,
       style: {
         ...s.slotBtn,
-        background: taken ? "#f8fafc" : selectedTime === t ? "#0ea5e9" : "#fff",
-        color: taken ? "#cbd5e1" : selectedTime === t ? "#fff" : "#334155",
-        cursor: taken ? "not-allowed" : "pointer",
-        border: selectedTime === t ? "2px solid #0ea5e9" : "2px solid #e2e8f0",
-        opacity: taken ? 0.6 : 1
+        background: taken ? "#f8fafc" : isLoading ? "#f8fafc" : selectedTime === t ? "#0ea5e9" : "#fff",
+        color: taken ? "#cbd5e1" : isLoading ? "#cbd5e1" : selectedTime === t ? "#fff" : "#334155",
+        cursor: disabled ? "not-allowed" : "pointer",
+        border: selectedTime === t && !isLoading ? "2px solid #0ea5e9" : "2px solid #e2e8f0",
+        opacity: taken ? 0.5 : isLoading ? 0.4 : 1,
+        transition: "all 0.15s"
       },
-      onClick: () => !taken && setSelectedTime(t)
+      onClick: () => !disabled && setSelectedTime(t)
     }, t, taken && /*#__PURE__*/React.createElement("div", {
       style: s.fullTag
-    }, "\u0E40\u0E15\u0E47\u0E21"));
-  }))), selectedDate && timeSlots.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, "\u0E40\u0E15\u0E47\u0E21"), isLoading && !taken && /*#__PURE__*/React.createElement("div", {
+      style: {
+        ...s.fullTag,
+        background: "#94a3b8"
+      }
+    }, "..."));
+  })), loadingSlots && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 12,
+      cursor: "not-allowed",
+      zIndex: 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "rgba(255,255,255,0.85)",
+      borderRadius: 10,
+      padding: "8px 16px",
+      fontSize: 13,
+      color: "#0369a1",
+      fontWeight: 600,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+    }
+  }, "\u23F3 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E40\u0E27\u0E25\u0E32\u0E27\u0E48\u0E32\u0E07...")))), selectedDate && timeSlots.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 16,
       padding: "16px",
