@@ -508,6 +508,7 @@ function ClinicBooking({
   thaiHolidays = {},
   closedDates = [],
   openDates = [],
+  daysOpen = DAYS_OPEN_DEFAULT,
   onCheckBooking = () => {},
   onAdminLogin = () => {}
 }) {
@@ -2060,21 +2061,84 @@ function ClinicBooking({
     const isPast = d < new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const dKey = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dow2 = d.getDay();
-    // openDates: { dateKey: "open9"|"open17"|{type:"custom",...} }
-    const isSpecialOpen = !!openDates[dKey];
-    const isClosed = closedDates.includes(dKey) || !isSpecialOpen && dow2 === 5;
+    const spEntry = openDates[dKey];
+    const isSpecialOpen = !!spEntry;
+    const isSpecialClose = closedDates.includes(dKey);
+    const isCustom = spEntry && typeof spEntry === "object" && spEntry.type === "custom";
+    const defaultClosed2 = dow2 === 5 || !daysOpen[dow2];
+    const isClosed = isSpecialClose || !isSpecialOpen && defaultClosed2;
     const isSel = selectedDate === day;
     const isTdy = day === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
     const isHoliday = !!thaiHolidays[dKey];
+
+    // สีและ indicator ตามสถานะ
+    let dayBg = "transparent";
+    let dayColor = "#1e293b";
+    let dayBorder = "1px solid transparent";
+    let indicator = null;
+    if (isSel) {
+      dayBg = "#0ea5e9";
+      dayColor = "#fff";
+    } else if (isSpecialClose) {
+      dayBg = "#fef2f2";
+      dayColor = "#ef4444";
+      dayBorder = "1px solid #fca5a5";
+      indicator = /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 7,
+          lineHeight: 1
+        }
+      }, "\uD83D\uDD34");
+    } else if (isClosed && !isSpecialOpen) {
+      dayColor = "#cbd5e1";
+    } else if (isCustom) {
+      dayBg = "#faf5ff";
+      dayColor = "#7c3aed";
+      dayBorder = "1px solid #c4b5fd";
+      indicator = /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 7,
+          lineHeight: 1
+        }
+      }, "\uD83D\uDFE3");
+    } else if (spEntry === "open17" && defaultClosed2) {
+      dayBg = "#fff7ed";
+      dayColor = "#c2410c";
+      dayBorder = "1px solid #fed7aa";
+      indicator = /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 7,
+          lineHeight: 1
+        }
+      }, "\uD83D\uDFE0");
+    } else if (spEntry === "open9" && defaultClosed2) {
+      dayBg = "#fef9ec";
+      dayColor = "#b45309";
+      dayBorder = "1px solid #fcd34d";
+      indicator = /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 7,
+          lineHeight: 1
+        }
+      }, "\uD83D\uDFE1");
+    } else if (isTdy) {
+      dayBg = "#e0f2fe";
+      dayColor = "#0369a1";
+    } else if (isHoliday) {
+      dayBg = "#f0fdf4";
+      dayColor = "#15803d";
+      dayBorder = "1px solid #86efac";
+    }
     return /*#__PURE__*/React.createElement("div", {
       key: day,
       style: {
         ...s.calDay,
-        background: isSel ? "#0ea5e9" : isTdy ? "#e0f2fe" : isHoliday && !isClosed ? "#f0fdf4" : "transparent",
-        color: isPast || isClosed ? "#cbd5e1" : isSel ? "#fff" : isHoliday ? "#15803d" : "#1e293b",
+        background: dayBg,
+        color: isPast || isClosed ? "#cbd5e1" : dayColor,
         cursor: isPast || isClosed ? "default" : "pointer",
         fontWeight: isTdy ? 700 : 400,
-        border: isHoliday && !isSel && !isClosed ? "1px solid #86efac" : "1px solid transparent"
+        border: isSel ? "1px solid #0ea5e9" : dayBorder,
+        borderRadius: 8
       },
       onClick: () => {
         if (!isPast && !isClosed) {
@@ -2082,7 +2146,7 @@ function ClinicBooking({
           setSelectedTime(null);
         }
       }
-    }, day, isHoliday && !isClosed && /*#__PURE__*/React.createElement("div", {
+    }, day, !isSel && !isPast && indicator, isHoliday && !isClosed && !indicator && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 6,
         lineHeight: 1,
@@ -2106,14 +2170,25 @@ function ClinicBooking({
       background: "#f0fdf4",
       border: "1px solid #86efac"
     }
-  }), "\u0E27\u0E31\u0E19\u0E2B\u0E22\u0E38\u0E14\u0E19\u0E31\u0E01\u0E02\u0E31\u0E15\u0E24\u0E01\u0E29\u0E4C"), /*#__PURE__*/React.createElement("span", {
+  }), "\u0E27\u0E31\u0E19\u0E2B\u0E22\u0E38\u0E14"), /*#__PURE__*/React.createElement("span", {
     style: s.legendItem
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      ...s.legendDot,
-      background: "#e2e8f0"
+      fontSize: 9
     }
-  }), "\u0E1B\u0E34\u0E14 (\u0E28\u0E38\u0E01\u0E23\u0E4C)")), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDD34"), " \u0E1B\u0E34\u0E14\u0E1E\u0E34\u0E40\u0E28\u0E29"), /*#__PURE__*/React.createElement("span", {
+    style: s.legendItem
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9
+    }
+  }, "\uD83D\uDFE0"), " \u0E40\u0E1B\u0E34\u0E14\u0E1E\u0E34\u0E40\u0E28\u0E29"), /*#__PURE__*/React.createElement("span", {
+    style: s.legendItem
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9
+    }
+  }, "\uD83D\uDFE3"), " \u0E40\u0E27\u0E25\u0E32\u0E1E\u0E34\u0E40\u0E28\u0E29")), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 8,
       padding: "8px 12px",
@@ -3881,87 +3956,7 @@ function AdminPanel({
         fontSize: 8
       }
     }, indicator));
-  }))), /*#__PURE__*/React.createElement("h3", {
-    style: {
-      ...as.sectionTitle,
-      marginTop: 8
-    }
-  }, "\u0E15\u0E32\u0E23\u0E32\u0E07\u0E40\u0E1B\u0E34\u0E14-\u0E1B\u0E34\u0E14\u0E1B\u0E23\u0E30\u0E08\u0E33\u0E2A\u0E31\u0E1B\u0E14\u0E32\u0E2B\u0E4C"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 8,
-      marginBottom: 16
-    }
-  }, [0, 1, 2, 3, 4, 5, 6].map(day => /*#__PURE__*/React.createElement("div", {
-    key: day,
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      background: "#fff",
-      borderRadius: 12,
-      padding: "10px 14px",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.06)"
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700,
-      color: "#1e293b"
-    }
-  }, ["วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"][day]), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#94a3b8",
-      marginTop: 1
-    }
-  }, daysOpen[day] ? day === 0 || day === 6 ? "09:00–16:00 น." : "17:00–21:00 น." : "ปิดทำการ")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 12,
-      color: daysOpen[day] ? "#10b981" : "#ef4444",
-      fontWeight: 600
-    }
-  }, daysOpen[day] ? "เปิด" : "ปิด"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 44,
-      height: 24,
-      borderRadius: 12,
-      cursor: "pointer",
-      transition: "all 0.2s",
-      background: daysOpen[day] ? "#10b981" : "#e2e8f0",
-      position: "relative"
-    },
-    onClick: () => setConfirmModal({
-      msg: `${daysOpen[day] ? "ปิด" : "เปิด"}${["วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"][day]}เป็นประจำทุกสัปดาห์?`,
-      onOk: () => {
-        const nd = {
-          ...daysOpen,
-          [day]: !daysOpen[day]
-        };
-        setDaysOpen(nd);
-        if (setDaysOpenRoot) setDaysOpenRoot(nd);
-        saveSchedule(closedDates, openDates, nd);
-      }
-    })
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 18,
-      height: 18,
-      borderRadius: "50%",
-      background: "#fff",
-      position: "absolute",
-      top: 3,
-      left: daysOpen[day] ? 23 : 3,
-      transition: "all 0.2s"
-    }
-  })))))), closedDates.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h3", {
+  }))), closedDates.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h3", {
     style: as.sectionTitle
   }, "\u0E27\u0E31\u0E19\u0E1B\u0E34\u0E14\u0E1E\u0E34\u0E40\u0E28\u0E29"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -5000,6 +4995,7 @@ function App() {
     thaiHolidays: thaiHolidays,
     closedDates: closedDates,
     openDates: openDates,
+    daysOpen: daysOpenRoot,
     onCheckBooking: () => setMode("mybookings"),
     onAdminLogin: () => setMode("admin")
   }));
