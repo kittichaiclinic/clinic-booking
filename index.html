@@ -507,7 +507,8 @@ function getFirstDayOfMonth(year, month) {
 function ClinicBooking({
   thaiHolidays = {},
   closedDates = [],
-  openDates = []
+  openDates = [],
+  onCheckBooking = () => {}
 }) {
   const today = new Date();
   const [step, setStep] = useState(1);
@@ -798,7 +799,9 @@ function ClinicBooking({
   // ── Success Screen ──
   if (confirmed) return /*#__PURE__*/React.createElement("div", {
     style: s.page
-  }, /*#__PURE__*/React.createElement(Header, null), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Header, {
+    onCheckBooking: onCheckBooking
+  }), /*#__PURE__*/React.createElement("div", {
     style: s.successCard
   }, /*#__PURE__*/React.createElement("div", {
     style: s.successIcon
@@ -1942,6 +1945,14 @@ function ClinicBooking({
     maxLength: 4,
     inputMode: "numeric",
     type: "password",
+    autoComplete: "new-password",
+    name: "booking-pin",
+    onFocus: e => {
+      if (form.pin.length > 0 && form.pin.length < 4) setForm(f => ({
+        ...f,
+        pin: ""
+      }));
+    },
     onChange: e => setForm(f => ({
       ...f,
       pin: e.target.value.replace(/[^0-9]/g, "")
@@ -2457,11 +2468,22 @@ function PreEmployExtras({
 // ─────────────────────────────────────────────────────────────
 // Shared UI: Header, SummaryRow
 // ─────────────────────────────────────────────────────────────
-function Header() {
+function Header({
+  onCheckBooking
+}) {
   return /*#__PURE__*/React.createElement("div", {
     style: s.header
   }, /*#__PURE__*/React.createElement("div", {
-    style: s.logoRow
+    style: {
+      ...s.logoRow,
+      justifyContent: "space-between"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 14
+    }
   }, /*#__PURE__*/React.createElement("img", {
     src: CLINIC_LOGO,
     alt: "logo",
@@ -2479,7 +2501,21 @@ function Header() {
     style: s.clinicName
   }, "\u0E04\u0E25\u0E34\u0E19\u0E34\u0E01\u0E41\u0E1E\u0E17\u0E22\u0E4C\u0E01\u0E34\u0E15\u0E15\u0E34\u0E0A\u0E31\u0E22"), /*#__PURE__*/React.createElement("div", {
     style: s.clinicSub
-  }, "\u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E2D\u0E07\u0E04\u0E34\u0E27\u0E2D\u0E2D\u0E19\u0E44\u0E25\u0E19\u0E4C\u0E25\u0E48\u0E27\u0E07\u0E2B\u0E19\u0E49\u0E32"))));
+  }, "\u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E2D\u0E07\u0E04\u0E34\u0E27\u0E2D\u0E2D\u0E19\u0E44\u0E25\u0E19\u0E4C\u0E25\u0E48\u0E27\u0E07\u0E2B\u0E19\u0E49\u0E32"))), /*#__PURE__*/React.createElement("button", {
+    style: {
+      background: "rgba(255,255,255,0.18)",
+      color: "#fff",
+      border: "1.5px solid rgba(255,255,255,0.5)",
+      borderRadius: 20,
+      padding: "6px 14px",
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: "pointer",
+      flexShrink: 0,
+      whiteSpace: "nowrap"
+    },
+    onClick: onCheckBooking
+  }, "\uD83D\uDD0D \u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07")));
 }
 function SummaryRow({
   icon,
@@ -4822,40 +4858,12 @@ function App() {
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(ClinicBooking, {
     thaiHolidays: thaiHolidays,
     closedDates: closedDates,
-    openDates: openDates
+    openDates: openDates,
+    onCheckBooking: () => setMode("mybookings")
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       bottom: 20,
-      left: 0,
-      right: 0,
-      display: "flex",
-      justifyContent: "center",
-      zIndex: 200,
-      padding: "0 16px",
-      pointerEvents: "none"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      pointerEvents: "auto",
-      background: "#fff",
-      color: "#0369a1",
-      border: "2px solid #0ea5e9",
-      borderRadius: 24,
-      padding: "10px 24px",
-      fontSize: 14,
-      fontWeight: 700,
-      cursor: "pointer",
-      boxShadow: "0 2px 12px rgba(14,165,233,0.2)",
-      display: "flex",
-      alignItems: "center",
-      gap: 8
-    },
-    onClick: () => setMode("mybookings")
-  }, "\uD83D\uDD0D \u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A / \u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      bottom: 84,
       right: 16,
       zIndex: 200
     }
