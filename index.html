@@ -710,27 +710,32 @@ function ClinicBooking({
       if (result.duplicate) throw new Error("เวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น");
       const bookingRef = result.ref;
 
-      // ── step 2: อัพโหลดรูปแผล (ถ้ามี) ──
+      // ── step 2: อัพโหลดรูปแผล ทีละรูป ──
       if (woundImages.length > 0) {
-        try {
-          const uploadPromises = woundImages.map((img, idx) => fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain"
-            },
-            body: JSON.stringify({
-              action: "uploadImage",
-              ref: bookingRef,
-              fileName: img.name || `wound_${idx + 1}.jpg`,
-              base64: img.url,
-              index: idx + 1,
-              total: woundImages.length
-            })
-          }).then(r => r.json()));
-          await Promise.all(uploadPromises);
-        } catch (uploadErr) {
-          console.warn("อัพโหลดรูปไม่สำเร็จ:", uploadErr);
-          // ไม่ block การจอง แค่ warn
+        for (let wi = 0; wi < woundImages.length; wi++) {
+          const img = woundImages[wi];
+          try {
+            const upRes = await fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "text/plain"
+              },
+              body: JSON.stringify({
+                action: "uploadImage",
+                ref: bookingRef,
+                fileName: img.name || `wound_${wi + 1}.jpg`,
+                base64: img.url,
+                index: wi + 1,
+                total: woundImages.length
+              })
+            });
+            const upData = await upRes.json();
+            if (!upData.success) {
+              console.warn("อัพโหลดรูป " + (wi + 1) + " ไม่สำเร็จ:", upData.error || "");
+            }
+          } catch (uploadErr) {
+            console.warn("อัพโหลดรูป " + (wi + 1) + " error:", uploadErr.message);
+          }
         }
       }
       setBookingRef(bookingRef);
