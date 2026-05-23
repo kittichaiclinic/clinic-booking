@@ -540,6 +540,7 @@ function ClinicBooking({
   const [selectedTime, setSelectedTime] = useState(null);
   const [takenSlotsMap, setTakenSlotsMap] = useState({}); // { dateKey: ["17:00","17:30",...] }
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [closedToast, setClosedToast] = useState(false);
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -2058,7 +2059,11 @@ function ClinicBooking({
   })), Array(daysInMonth).fill(null).map((_, i) => {
     const day = i + 1;
     const d = new Date(calYear, calMonth, day);
-    const isPast = d < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // ไม่ให้จองวันปัจจุบัน — ต้องจองวันถัดไปเป็นอย่างน้อย
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const isPast = d < tomorrowStart;
     const dKey = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dow2 = d.getDay();
     const spEntry = openDates[dKey];
@@ -2135,16 +2140,20 @@ function ClinicBooking({
         ...s.calDay,
         background: dayBg,
         color: isPast || isClosed ? "#cbd5e1" : dayColor,
-        cursor: isPast || isClosed ? "default" : "pointer",
+        cursor: isPast ? "default" : isClosed ? "not-allowed" : "pointer",
         fontWeight: isTdy ? 700 : 400,
         border: isSel ? "1px solid #0ea5e9" : dayBorder,
         borderRadius: 8
       },
       onClick: () => {
-        if (!isPast && !isClosed) {
-          setSelectedDate(day);
-          setSelectedTime(null);
+        if (isPast) return;
+        if (isClosed) {
+          setClosedToast(true);
+          setTimeout(() => setClosedToast(false), 2000);
+          return;
         }
+        setSelectedDate(day);
+        setSelectedTime(null);
       }
     }, day, !isSel && !isPast && indicator, isHoliday && !isClosed && !indicator && /*#__PURE__*/React.createElement("div", {
       style: {
@@ -2198,7 +2207,20 @@ function ClinicBooking({
       fontSize: 11,
       color: "#0369a1"
     }
-  }, "\uD83D\uDD50 \u0E08-\u0E1E\u0E24: 17:00\u201321:00 \u0E19. \xA0|\xA0 \u0E2A-\u0E2D\u0E32 / \u0E27\u0E31\u0E19\u0E2B\u0E22\u0E38\u0E14: 09:00\u201316:00 \u0E19.")), selectedDate && timeSlots.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDD50 \u0E08-\u0E1E\u0E24: 17:00\u201321:00 \u0E19. \xA0|\xA0 \u0E2A-\u0E2D\u0E32 / \u0E27\u0E31\u0E19\u0E2B\u0E22\u0E38\u0E14: 09:00\u201316:00 \u0E19."), closedToast && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8,
+      padding: "10px 14px",
+      background: "#fef2f2",
+      border: "1px solid #fca5a5",
+      borderRadius: 10,
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#dc2626",
+      textAlign: "center",
+      animation: "fadeIn 0.2s"
+    }
+  }, "\uD83D\uDD34 \u0E1B\u0E34\u0E14\u0E17\u0E33\u0E01\u0E32\u0E23\u0E43\u0E19\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E2D\u0E37\u0E48\u0E19")), selectedDate && timeSlots.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 16
     }
