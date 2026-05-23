@@ -540,6 +540,7 @@ function ClinicBooking({
   const [form, setForm] = useState({
     name: "",
     phone: "",
+    pin: "",
     note: ""
   });
   const [confirmed, setConfirmed] = useState(false);
@@ -694,7 +695,8 @@ function ClinicBooking({
       woundDetail: woundDetail || "",
       woundImages: "",
       // จะอัปเดตหลังอัพโหลดรูป
-      note: form.note || ""
+      note: form.note || "",
+      pin: form.pin || ""
     };
     try {
       // ── step 1: บันทึกการจองก่อน ──
@@ -780,6 +782,7 @@ function ClinicBooking({
     setForm({
       name: "",
       phone: "",
+      pin: "",
       note: ""
     });
     setConfirmed(false);
@@ -1916,6 +1919,49 @@ function ClinicBooking({
     style: s.formGroup
   }, /*#__PURE__*/React.createElement("label", {
     style: s.label
+  }, "\u0E23\u0E2B\u0E31\u0E2A PIN ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#ef4444"
+    }
+  }, "*"), " ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      color: "#94a3b8",
+      fontWeight: 400
+    }
+  }, "(4 \u0E2B\u0E25\u0E31\u0E01 \u0E43\u0E0A\u0E49\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A/\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07)")), /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...s.input,
+      letterSpacing: 8,
+      fontSize: 22,
+      textAlign: "center",
+      borderColor: form.pin && form.pin.length < 4 ? "#f97316" : "#e2e8f0"
+    },
+    placeholder: "\u2022 \u2022 \u2022 \u2022",
+    value: form.pin,
+    maxLength: 4,
+    inputMode: "numeric",
+    type: "password",
+    onChange: e => setForm(f => ({
+      ...f,
+      pin: e.target.value.replace(/[^0-9]/g, "")
+    }))
+  }), form.pin && form.pin.length < 4 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "#f97316",
+      marginTop: 4
+    }
+  }, "\u26A0\uFE0F \u0E01\u0E23\u0E38\u0E13\u0E32\u0E01\u0E23\u0E2D\u0E01 PIN \u0E43\u0E2B\u0E49\u0E04\u0E23\u0E1A 4 \u0E2B\u0E25\u0E31\u0E01"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#94a3b8",
+      marginTop: 6
+    }
+  }, "\uD83D\uDCCC \u0E08\u0E33 PIN \u0E44\u0E27\u0E49\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E43\u0E0A\u0E49\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E2B\u0E23\u0E37\u0E2D\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07")), /*#__PURE__*/React.createElement("div", {
+    style: s.formGroup
+  }, /*#__PURE__*/React.createElement("label", {
+    style: s.label
   }, "\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38 / \u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E40\u0E15\u0E34\u0E21"), /*#__PURE__*/React.createElement("textarea", {
     style: {
       ...s.input,
@@ -1936,9 +1982,9 @@ function ClinicBooking({
   }, "\u2190 \u0E22\u0E49\u0E2D\u0E19\u0E01\u0E25\u0E31\u0E1A"), /*#__PURE__*/React.createElement("button", {
     style: {
       ...s.nextBtn,
-      opacity: form.name && form.phone.length === 10 ? 1 : 0.4
+      opacity: form.name && form.phone.length === 10 && form.pin.length === 4 ? 1 : 0.4
     },
-    disabled: !form.name || form.phone.length !== 10,
+    disabled: !form.name || form.phone.length !== 10 || form.pin.length !== 4,
     onClick: () => setStep(3)
   }, "\u0E16\u0E31\u0E14\u0E44\u0E1B \u2192"))), step === 3 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     style: s.sectionTitle
@@ -4364,11 +4410,389 @@ function AdminPanel({
 }
 
 // ─────────────────────────────────────────────────────────────
+// MY BOOKINGS — ผู้ป่วยตรวจสอบ/ยกเลิกการจองของตัวเอง
+// ─────────────────────────────────────────────────────────────
+function MyBookings({
+  onBack
+}) {
+  const SCRIPT_URL2 = "https://script.google.com/macros/s/AKfycbwM1ewmQgBjwOwA-eBG6XMr5fFzwgonMPZPc-nohggit-L9tkOHpjhdkw9CoUyfIBa2/exec";
+  const [phone, setPhone] = useState("");
+  const [pin, setPin] = useState("");
+  const [step, setStep] = useState("login"); // login | list
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [cancelConfirm, setCancelConfirm] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  async function handleLogin() {
+    if (phone.length !== 10 || pin.length !== 4) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(SCRIPT_URL2 + "?action=getMyBookings&phone=" + encodeURIComponent(phone) + "&pin=" + encodeURIComponent(pin));
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "ไม่พบข้อมูล");
+        return;
+      }
+      setBookings(data.bookings || []);
+      setStep("list");
+    } catch (e) {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function handleCancel(b) {
+    setCancelling(true);
+    try {
+      const res = await fetch(SCRIPT_URL2 + "?action=updateStatus&row=" + b.rowIndex + "&status=" + encodeURIComponent("ยกเลิก"));
+      const data = await res.json();
+      if (data.success) {
+        setBookings(prev => prev.map(x => x.ref === b.ref ? {
+          ...x,
+          status: "ยกเลิก"
+        } : x));
+      } else {
+        alert("ยกเลิกไม่สำเร็จ");
+      }
+    } catch (e) {
+      alert("เกิดข้อผิดพลาด");
+    } finally {
+      setCancelling(false);
+      setCancelConfirm(null);
+    }
+  }
+  const st = {
+    page: {
+      minHeight: "100vh",
+      background: "linear-gradient(135deg,#e0f2fe,#f0fdf4)",
+      fontFamily: "'Sarabun','Noto Sans Thai',sans-serif"
+    },
+    card: {
+      maxWidth: 480,
+      margin: "0 auto",
+      padding: "0 16px 80px"
+    },
+    header: {
+      background: "linear-gradient(90deg,#0369a1,#0ea5e9)",
+      padding: "20px 24px",
+      color: "#fff",
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    },
+    input: {
+      width: "100%",
+      border: "2px solid #e2e8f0",
+      borderRadius: 10,
+      padding: "12px 14px",
+      fontSize: 15,
+      outline: "none",
+      fontFamily: "inherit",
+      boxSizing: "border-box"
+    },
+    btn: {
+      width: "100%",
+      background: "linear-gradient(90deg,#0369a1,#0ea5e9)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "14px",
+      fontSize: 16,
+      fontWeight: 700,
+      cursor: "pointer",
+      marginTop: 8
+    },
+    bCard: {
+      background: "#fff",
+      borderRadius: 14,
+      padding: "14px 16px",
+      marginBottom: 10,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+      borderLeft: "4px solid #0ea5e9"
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: st.page
+  }, /*#__PURE__*/React.createElement("div", {
+    style: st.header
+  }, /*#__PURE__*/React.createElement("button", {
+    style: {
+      background: "none",
+      border: "none",
+      color: "#fff",
+      fontSize: 22,
+      cursor: "pointer",
+      padding: 0
+    },
+    onClick: onBack
+  }, "\u2190"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700
+    }
+  }, "\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A / \u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      opacity: 0.85
+    }
+  }, "\u0E04\u0E25\u0E34\u0E19\u0E34\u0E01\u0E41\u0E1E\u0E17\u0E22\u0E4C\u0E01\u0E34\u0E15\u0E15\u0E34\u0E0A\u0E31\u0E22"))), /*#__PURE__*/React.createElement("div", {
+    style: st.card
+  }, step === "login" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 16,
+      padding: 24,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.08)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700,
+      color: "#0369a1",
+      marginBottom: 20,
+      textAlign: "center"
+    }
+  }, "\uD83D\uDD10 \u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#374151",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E28\u0E31\u0E1E\u0E17\u0E4C"), /*#__PURE__*/React.createElement("input", {
+    style: st.input,
+    placeholder: "\u0E40\u0E0A\u0E48\u0E19 0812345678",
+    value: phone,
+    maxLength: 10,
+    inputMode: "numeric",
+    onChange: e => setPhone(e.target.value.replace(/[^0-9]/g, ""))
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#374151",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "\u0E23\u0E2B\u0E31\u0E2A PIN 4 \u0E2B\u0E25\u0E31\u0E01"), /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...st.input,
+      letterSpacing: 8,
+      fontSize: 22,
+      textAlign: "center"
+    },
+    placeholder: "\u2022 \u2022 \u2022 \u2022",
+    value: pin,
+    maxLength: 4,
+    inputMode: "numeric",
+    type: "password",
+    onChange: e => setPin(e.target.value.replace(/[^0-9]/g, ""))
+  })), error && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fef2f2",
+      border: "1px solid #fca5a5",
+      borderRadius: 8,
+      padding: "10px 14px",
+      fontSize: 13,
+      color: "#dc2626",
+      marginBottom: 12
+    }
+  }, "\u26A0\uFE0F ", error), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...st.btn,
+      opacity: phone.length === 10 && pin.length === 4 ? 1 : 0.4
+    },
+    disabled: phone.length !== 10 || pin.length !== 4 || loading,
+    onClick: handleLogin
+  }, loading ? "กำลังตรวจสอบ..." : "ค้นหาการจอง"))), step === "list" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: "#64748b",
+      marginBottom: 14
+    }
+  }, "\u0E1E\u0E1A ", bookings.length, " \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E40\u0E1A\u0E2D\u0E23\u0E4C ", phone), bookings.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: 32,
+      background: "#fff",
+      borderRadius: 14,
+      color: "#94a3b8"
+    }
+  }, "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07\u0E17\u0E35\u0E48\u0E40\u0E01\u0E35\u0E48\u0E22\u0E27\u0E02\u0E49\u0E2D\u0E07"), bookings.map((b, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      ...st.bCard,
+      borderLeftColor: b.status === "ยกเลิก" ? "#ef4444" : b.status === "เสร็จสิ้น" ? "#22c55e" : "#0ea5e9"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: "#0369a1"
+    }
+  }, b.ref), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      padding: "3px 10px",
+      borderRadius: 20,
+      background: b.status === "ยกเลิก" ? "#fee2e2" : b.status === "เสร็จสิ้น" ? "#f0fdf4" : "#e0f2fe",
+      color: b.status === "ยกเลิก" ? "#991b1b" : b.status === "เสร็จสิ้น" ? "#166534" : "#0369a1"
+    }
+  }, b.status === "ยกเลิก" ? "❌ ยกเลิกแล้ว" : b.status === "เสร็จสิ้น" ? "✅ เสร็จสิ้น" : "🔵 รอรับบริการ")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#1e293b",
+      marginBottom: 3
+    }
+  }, "\uD83E\uDE7A ", b.service), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#64748b"
+    }
+  }, "\uD83D\uDCC5 ", b.date, " \xA0\uD83D\uDD50 ", b.time), b.status === "รอรับบริการ" && /*#__PURE__*/React.createElement("button", {
+    style: {
+      marginTop: 10,
+      background: "#fef2f2",
+      color: "#dc2626",
+      border: "1px solid #fca5a5",
+      borderRadius: 8,
+      padding: "8px 16px",
+      fontSize: 13,
+      fontWeight: 600,
+      cursor: "pointer",
+      width: "100%"
+    },
+    onClick: () => setCancelConfirm(b)
+  }, "\u2715 \u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07\u0E19\u0E35\u0E49"))), /*#__PURE__*/React.createElement("button", {
+    style: {
+      ...st.btn,
+      background: "#f1f5f9",
+      color: "#475569",
+      marginTop: 8
+    },
+    onClick: () => {
+      setStep("login");
+      setPhone("");
+      setPin("");
+      setBookings("");
+      setError("");
+    }
+  }, "\u2190 \u0E01\u0E25\u0E31\u0E1A"))), cancelConfirm && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0,0,0,0.6)",
+      zIndex: 999,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 16,
+      padding: 24,
+      maxWidth: 340,
+      width: "100%"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700,
+      color: "#dc2626",
+      marginBottom: 12
+    }
+  }, "\u26A0\uFE0F \u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E01\u0E32\u0E23\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: "#374151",
+      marginBottom: 6
+    }
+  }, "\u0E23\u0E2B\u0E31\u0E2A: ", /*#__PURE__*/React.createElement("strong", null, cancelConfirm.ref)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#64748b",
+      marginBottom: 4
+    }
+  }, "\uD83E\uDE7A ", cancelConfirm.service), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#64748b",
+      marginBottom: 20
+    }
+  }, "\uD83D\uDCC5 ", cancelConfirm.date, " ", cancelConfirm.time), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    style: {
+      flex: 1,
+      background: "#f1f5f9",
+      color: "#475569",
+      border: "none",
+      borderRadius: 10,
+      padding: "12px",
+      fontSize: 14,
+      fontWeight: 600,
+      cursor: "pointer"
+    },
+    onClick: () => setCancelConfirm(null),
+    disabled: cancelling
+  }, "\u0E44\u0E21\u0E48\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01"), /*#__PURE__*/React.createElement("button", {
+    style: {
+      flex: 1,
+      background: "#ef4444",
+      color: "#fff",
+      border: "none",
+      borderRadius: 10,
+      padding: "12px",
+      fontSize: 14,
+      fontWeight: 600,
+      cursor: "pointer"
+    },
+    onClick: () => handleCancel(cancelConfirm),
+    disabled: cancelling
+  }, cancelling ? "กำลังยกเลิก..." : "ยืนยันยกเลิก")))));
+}
+
+// ─────────────────────────────────────────────────────────────
 // ROOT APP
 // ─────────────────────────────────────────────────────────────
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwM1ewmQgBjwOwA-eBG6XMr5fFzwgonMPZPc-nohggit-L9tkOHpjhdkw9CoUyfIBa2/exec";
 function App() {
-  const [mode, setMode] = useState("patient");
+  const [mode, setMode] = useState("patient"); // patient | admin | mybookings
   const [thaiHolidays, setThaiHolidays] = useState(THAI_HOLIDAYS_2026);
   const [closedDates, setClosedDates] = useState([]);
   const [openDates, setOpenDates] = useState({});
@@ -4392,11 +4816,43 @@ function App() {
     openDates: openDates,
     setOpenDates: setOpenDates
   });
+  if (mode === "mybookings") return /*#__PURE__*/React.createElement(MyBookings, {
+    onBack: () => setMode("patient")
+  });
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(ClinicBooking, {
     thaiHolidays: thaiHolidays,
     closedDates: closedDates,
     openDates: openDates
   }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      bottom: 20,
+      left: 0,
+      right: 0,
+      display: "flex",
+      justifyContent: "center",
+      zIndex: 200,
+      padding: "0 16px",
+      pointerEvents: "none"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    style: {
+      pointerEvents: "auto",
+      background: "#fff",
+      color: "#0369a1",
+      border: "2px solid #0ea5e9",
+      borderRadius: 24,
+      padding: "10px 24px",
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: "pointer",
+      boxShadow: "0 2px 12px rgba(14,165,233,0.2)",
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    },
+    onClick: () => setMode("mybookings")
+  }, "\uD83D\uDD0D \u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A / \u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07")), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       bottom: 84,
