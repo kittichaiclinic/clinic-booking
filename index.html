@@ -2878,7 +2878,9 @@ function AdminPanel({
   closedDates,
   setClosedDates,
   openDates,
-  setOpenDates
+  setOpenDates,
+  daysOpenInit,
+  setDaysOpenRoot
 }) {
   const [pin, setPin] = useState("");
   const [authed, setAuthed] = useState(false);
@@ -2886,7 +2888,11 @@ function AdminPanel({
   const [activeTab, setActiveTab] = useState("bookings");
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [daysOpen, setDaysOpen] = useState(DAYS_OPEN_DEFAULT);
+  const [daysOpen, setDaysOpen] = useState(daysOpenInit || DAYS_OPEN_DEFAULT);
+  // sync กลับ Root เมื่อ daysOpenInit เปลี่ยน (โหลดจาก server)
+  useEffect(() => {
+    if (daysOpenInit) setDaysOpen(daysOpenInit);
+  }, [JSON.stringify(daysOpenInit)]);
   const [loadedYears, setLoadedYears] = useState(new Set([2026]));
   const [calAdminYear, setCalAdminYear] = useState(new Date().getFullYear());
   const [calAdminMonth, setCalAdminMonth] = useState(new Date().getMonth());
@@ -2929,19 +2935,24 @@ function AdminPanel({
   // บันทึก schedule ไป server
   async function saveSchedule(newClosedDates, newOpenDates, newDaysOpen) {
     try {
-      await fetch(SHEET_URL + "?action=saveSchedule", {
+      const body = JSON.stringify({
+        closedDates: newClosedDates || [],
+        openDates: newOpenDates || {},
+        daysOpen: newDaysOpen || {}
+      });
+      const res = await fetch(SHEET_URL, {
         method: "POST",
         headers: {
           "Content-Type": "text/plain"
         },
-        body: JSON.stringify({
-          closedDates: newClosedDates,
-          openDates: newOpenDates,
-          daysOpen: newDaysOpen
-        })
+        body: body
       });
+      const result = await res.json();
+      if (!result.success) {
+        console.warn("saveSchedule error:", result.error);
+      }
     } catch (e) {
-      console.warn("saveSchedule failed:", e);
+      console.warn("saveSchedule failed:", e.message);
     }
   }
   async function updateBookingStatus(rowIndex, newStatus, localIdx, dateKey) {
@@ -3935,6 +3946,7 @@ function AdminPanel({
           [day]: !daysOpen[day]
         };
         setDaysOpen(nd);
+        if (setDaysOpenRoot) setDaysOpenRoot(nd);
         saveSchedule(closedDates, openDates, nd);
       }
     })
@@ -4950,6 +4962,7 @@ function App() {
   const [thaiHolidays, setThaiHolidays] = useState(THAI_HOLIDAYS_2026);
   const [closedDates, setClosedDates] = useState([]);
   const [openDates, setOpenDates] = useState({});
+  const [daysOpenRoot, setDaysOpenRoot] = useState(DAYS_OPEN_DEFAULT);
   const [scheduleLoaded, setScheduleLoaded] = useState(false);
 
   // โหลด schedule จาก server ตอนเริ่มต้น
@@ -4958,6 +4971,14 @@ function App() {
       if (data.success) {
         setClosedDates(data.closedDates || []);
         setOpenDates(data.openDates || {});
+        if (data.daysOpen && Object.keys(data.daysOpen).length > 0) {
+          // convert string keys from JSON back to numbers
+          const dop = {};
+          Object.entries(data.daysOpen).forEach(([k, v]) => {
+            dop[Number(k)] = v;
+          });
+          setDaysOpenRoot(dop);
+        }
       }
     }).catch(() => {}).finally(() => setScheduleLoaded(true));
   }, []);
@@ -4968,7 +4989,9 @@ function App() {
     closedDates: closedDates,
     setClosedDates: setClosedDates,
     openDates: openDates,
-    setOpenDates: setOpenDates
+    setOpenDates: setOpenDates,
+    daysOpenInit: daysOpenRoot,
+    setDaysOpenRoot: setDaysOpenRoot
   });
   if (mode === "mybookings") return /*#__PURE__*/React.createElement(MyBookings, {
     onBack: () => setMode("patient")
