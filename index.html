@@ -508,7 +508,8 @@ function ClinicBooking({
   thaiHolidays = {},
   closedDates = [],
   openDates = [],
-  onCheckBooking = () => {}
+  onCheckBooking = () => {},
+  onAdminLogin = () => {}
 }) {
   const today = new Date();
   const [step, setStep] = useState(1);
@@ -1840,7 +1841,23 @@ function ClinicBooking({
         color: "#92400e"
       }
     }, "\u23F1\uFE0F \u0E1C\u0E25\u0E15\u0E23\u0E27\u0E08\u0E40\u0E25\u0E37\u0E2D\u0E14\u0E2D\u0E2D\u0E01\u0E20\u0E32\u0E22\u0E43\u0E19 24 \u0E0A\u0E31\u0E48\u0E27\u0E42\u0E21\u0E07"))));
-  })), /*#__PURE__*/React.createElement("button", {
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginTop: 8,
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    style: {
+      background: "none",
+      border: "none",
+      color: "#cbd5e1",
+      fontSize: 11,
+      cursor: "pointer",
+      padding: "6px 12px"
+    },
+    onClick: onAdminLogin
+  }, "\u2699 \u0E40\u0E08\u0E49\u0E32\u0E2B\u0E19\u0E49\u0E32\u0E17\u0E35\u0E48")), /*#__PURE__*/React.createElement("button", {
     style: {
       ...s.nextBtn,
       opacity: selectedActivity && detailComplete ? 1 : 0.4
@@ -2973,6 +2990,19 @@ function AdminPanel({
   const countAll = bookings.length;
   const countWait = bookings.filter(b => b.status !== "ยกเลิก").length;
   const countCancel = bookings.filter(b => b.status === "ยกเลิก").length;
+
+  // คิววันนี้ + พรุ่งนี้
+  const todayDK = (() => {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  })();
+  const tomorrowDK = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  })();
+  const todayBookings = bookings.filter(b => getBookingDateKey(b) === todayDK && b.status !== "ยกเลิก").sort((a, b2) => a.time > b2.time ? 1 : -1);
+  const tomorrowBookings = bookings.filter(b => getBookingDateKey(b) === tomorrowDK && b.status !== "ยกเลิก").sort((a, b2) => a.time > b2.time ? 1 : -1);
   if (!authed) return /*#__PURE__*/React.createElement("div", {
     style: as.page
   }, /*#__PURE__*/React.createElement("div", {
@@ -3121,7 +3151,159 @@ function AdminPanel({
       marginTop: 2,
       fontWeight: 600
     }
-  }, c.label)))), /*#__PURE__*/React.createElement("div", {
+  }, c.label)))), !filterDate && filterStatus === "all" && (todayBookings.length > 0 || tomorrowBookings.length > 0) && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16
+    }
+  }, todayBookings.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#0369a1",
+      marginBottom: 8,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, "\uD83D\uDCC5 \u0E27\u0E31\u0E19\u0E19\u0E35\u0E49", /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: "#0ea5e9",
+      color: "#fff",
+      borderRadius: 20,
+      padding: "1px 10px",
+      fontSize: 11
+    }
+  }, todayBookings.length, " \u0E04\u0E34\u0E27")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }
+  }, todayBookings.map((b, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      background: "#f0f9ff",
+      border: "1px solid #bae6fd",
+      borderRadius: 10,
+      padding: "10px 12px",
+      borderLeft: "3px solid #0ea5e9"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#0369a1"
+    }
+  }, b.time), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#1e293b",
+      marginLeft: 8
+    }
+  }, b.name)), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: "#0369a1",
+      background: "#e0f2fe",
+      borderRadius: 20,
+      padding: "2px 8px",
+      fontWeight: 600
+    }
+  }, b.ref)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#64748b",
+      marginTop: 3
+    }
+  }, "\uD83E\uDE7A ", b.service))))), tomorrowBookings.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#7c3aed",
+      marginBottom: 8,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, "\uD83D\uDCC5 \u0E1E\u0E23\u0E38\u0E48\u0E07\u0E19\u0E35\u0E49", /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: "#7c3aed",
+      color: "#fff",
+      borderRadius: 20,
+      padding: "1px 10px",
+      fontSize: 11
+    }
+  }, tomorrowBookings.length, " \u0E04\u0E34\u0E27")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }
+  }, tomorrowBookings.map((b, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      background: "#faf5ff",
+      border: "1px solid #c4b5fd",
+      borderRadius: 10,
+      padding: "10px 12px",
+      borderLeft: "3px solid #7c3aed"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#7c3aed"
+    }
+  }, b.time), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#1e293b",
+      marginLeft: 8
+    }
+  }, b.name)), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: "#7c3aed",
+      background: "#ede9fe",
+      borderRadius: 20,
+      padding: "2px 8px",
+      fontWeight: 600
+    }
+  }, b.ref)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#64748b",
+      marginTop: 3
+    }
+  }, "\uD83E\uDE7A ", b.service))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#e2e8f0",
+      marginBottom: 12
+    }
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -4855,32 +5037,9 @@ function App() {
     thaiHolidays: thaiHolidays,
     closedDates: closedDates,
     openDates: openDates,
-    onCheckBooking: () => setMode("mybookings")
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      bottom: 20,
-      right: 16,
-      zIndex: 200
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      background: "rgba(3,105,161,0.88)",
-      color: "#fff",
-      border: "none",
-      borderRadius: "50%",
-      width: 44,
-      height: 44,
-      fontSize: 18,
-      cursor: "pointer",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    },
-    title: "\u0E40\u0E08\u0E49\u0E32\u0E2B\u0E19\u0E49\u0E32\u0E17\u0E35\u0E48",
-    onClick: () => setMode("admin")
-  }, "\u2699\uFE0F")));
+    onCheckBooking: () => setMode("mybookings"),
+    onAdminLogin: () => setMode("admin")
+  }));
 }
 
 // ─────────────────────────────────────────────────────────────
