@@ -4779,11 +4779,12 @@ function MyBookings({
       fontSize: 22,
       textAlign: "center"
     },
-    placeholder: "\u2022 \u2022 \u2022 \u2022",
+    placeholder: "_ _ _ _",
     value: pin,
     maxLength: 4,
     inputMode: "numeric",
-    type: "password",
+    type: "tel",
+    autoComplete: "off",
     onChange: e => setPin(e.target.value.replace(/[^0-9]/g, ""))
   })), error && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4859,7 +4860,13 @@ function MyBookings({
       fontSize: 13,
       color: "#64748b"
     }
-  }, "\uD83D\uDCC5 ", b.date, " \xA0\uD83D\uDD50 ", b.time), b.status === "รอรับบริการ" && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCC5 ", b.date, " \xA0\uD83D\uDD50 ", b.time), b.name && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "#94a3b8",
+      marginTop: 2
+    }
+  }, "\uD83D\uDC64 ", b.name), b.status === "รอรับบริการ" && /*#__PURE__*/React.createElement("button", {
     style: {
       marginTop: 10,
       background: "#fef2f2",
