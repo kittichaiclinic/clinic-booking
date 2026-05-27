@@ -613,7 +613,6 @@ function ClinicBooking({
       key = usMap[ultrasoundType] || key;
     }
     if (id === 8 && selectedVaccines.length > 0) {
-      // รวมราคาวัคซีนทุกตัวที่เลือก
       const vacMap = {
         "fluarix": "vac_fluarix",
         "influ3": "vac_influ3",
@@ -628,8 +627,11 @@ function ClinicBooking({
       selectedVaccines.forEach(v => {
         const vk = vacMap[v];
         if (vk && prices[vk] !== undefined) {
-          total += Number(prices[vk]);
-          hasPrice = true;
+          const p2 = parsePrice(prices[vk]);
+          if (p2) {
+            total += p2.amount;
+            hasPrice = true;
+          }
         }
       });
       if (hasPrice) return {
@@ -639,12 +641,103 @@ function ClinicBooking({
       };
       return null;
     }
+
+    // ใบรับรองแพทย์ — แยกตาม certType
+    if (id === 7 && certType) {
+      const certKeyMap = {
+        drive: "cert_drive",
+        job: "cert_job",
+        other: "cert_other"
+      };
+      key = certKeyMap[certType] || key;
+      // บวกราคาผลตรวจเพิ่มเติม
+      const extraMap = {
+        pregnancy: "extra_pregnancy",
+        hepb: "extra_hepb",
+        antihbs: "extra_antihbs",
+        drug: "extra_drug",
+        ecg: "extra_ecg"
+      };
+      let base = key && prices[key] !== undefined ? (parsePrice(prices[key]) || {
+        amount: 0
+      }).amount : 0;
+      let extraTotal = 0;
+      let hasExtra = false;
+      (certExtraTests || []).forEach(e => {
+        const ek = extraMap[e];
+        if (ek && prices[ek] !== undefined) {
+          const pe = parsePrice(prices[ek]);
+          if (pe) {
+            extraTotal += pe.amount;
+            hasExtra = true;
+          }
+        }
+      });
+      if (!key || prices[key] === undefined) {
+        if (hasExtra) return {
+          type: "sum",
+          amount: extraTotal,
+          label: "รวมผลตรวจเพิ่มเติม"
+        };
+        return null;
+      }
+      const total = base + extraTotal;
+      return {
+        type: "sum",
+        amount: total,
+        label: hasExtra ? `ค่าใบรับรอง + ผลตรวจเพิ่มเติม` : null
+      };
+    }
+
+    // ก่อนเข้าทำงาน — บวกผลตรวจเพิ่มเติม
+    if (id === 2) {
+      const extraMap2 = {
+        pregnancy: "extra_pregnancy",
+        hepb: "extra_hepb",
+        antihbs: "extra_antihbs",
+        drug: "extra_drug",
+        ecg: "extra_ecg"
+      };
+      let base2 = prices["preemploy"] !== undefined ? (parsePrice(prices["preemploy"]) || {
+        amount: 0
+      }).amount : 0;
+      let extraTotal2 = 0;
+      let hasExtra2 = false;
+      (preEmployTests || []).forEach(e => {
+        const ek = extraMap2[e];
+        if (ek && prices[ek] !== undefined) {
+          const pe = parsePrice(prices[ek]);
+          if (pe) {
+            extraTotal2 += pe.amount;
+            hasExtra2 = true;
+          }
+        }
+      });
+      if (!prices["preemploy"] && !hasExtra2) return null;
+      return {
+        type: "sum",
+        amount: base2 + extraTotal2,
+        label: hasExtra2 ? "รวมผลตรวจเพิ่มเติม" : null
+      };
+    }
+
+    // ยาคุม — แยกตาม contraMethod
+    if (id === 10 && contraMethod) {
+      const contraKeyMap = {
+        dmpa1: "contra_dmpa1",
+        dmpa3: "contra_dmpa3",
+        implanon: "contra_implanon"
+      };
+      key = contraKeyMap[contraMethod] || key;
+    }
     if (!key || prices[key] === undefined) return null;
     const p = parsePrice(prices[key]);
     if (!p) return null;
+    const noteVal = prices[key] && typeof prices[key] === "object" ? prices[key].note : "";
     return {
       type: p.isStarting ? "starting" : "fixed",
-      amount: p.amount
+      amount: p.amount,
+      note: noteVal || ""
     };
   }
   const servicePrice = getServicePrice();
@@ -672,11 +765,11 @@ function ClinicBooking({
       4: ["us_whole", "us_upper", "us_lower", "us_ob", "us_small"],
       5: ["implant"],
       6: ["general"],
-      7: ["medcert"],
+      7: ["cert_drive", "cert_job", "cert_other"],
       8: ["vac_fluarix", "vac_influ3", "vac_hep_b", "vac_hep_a", "vac_tt", "vac_rabies", "vac_hpv"],
       9: ["wound"],
-      10: ["contra"],
-      11: ["blood"],
+      10: ["contra_dmpa1", "contra_dmpa3", "contra_implanon"],
+      11: ["blood_abo", "blood_cbc", "blood_fbs", "blood_lipid", "blood_liver", "blood_renal", "blood_uric", "blood_hba1c", "blood_std"],
       12: ["ekg"]
     };
     const keys = keysByActivity[actId] || [];
@@ -2581,7 +2674,16 @@ function ClinicBooking({
       color: "#16a34a",
       marginTop: 2
     }
-  }, servicePrice.label), /*#__PURE__*/React.createElement("div", {
+  }, servicePrice.label), servicePrice.note && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#16a34a",
+      marginTop: 4,
+      background: "rgba(255,255,255,0.6)",
+      borderRadius: 6,
+      padding: "3px 8px"
+    }
+  }, "\uD83D\uDCA1 ", servicePrice.note), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: "#6ee7b7",
@@ -3104,7 +3206,8 @@ const PRICE_CONFIG = [{
 }, {
   key: "wound",
   label: "เย็บแผล / ตัดไหม / ทำแผล",
-  sub: null
+  sub: null,
+  note: "ราคาขึ้นกับขนาดและความซับซ้อนของแผล"
 }, {
   key: "ekg",
   label: "ตรวจคลื่นไฟฟ้าหัวใจ",
@@ -3164,7 +3267,8 @@ const PRICE_CONFIG = [{
 }, {
   key: "blood",
   label: "ตรวจเลือด",
-  sub: null
+  sub: null,
+  note: "ราคาขึ้นกับรายการที่เลือก"
 }, {
   key: "vac_fluarix",
   label: "ฉีดวัคซีน",
@@ -3193,6 +3297,94 @@ const PRICE_CONFIG = [{
   key: "vac_hpv",
   label: "ฉีดวัคซีน",
   sub: "HPV"
+},
+// ใบรับรองแพทย์ — แยกตามประเภท
+{
+  key: "cert_drive",
+  label: "ใบรับรองแพทย์",
+  sub: "ทำ/ต่อใบขับขี่"
+}, {
+  key: "cert_job",
+  label: "ใบรับรองแพทย์",
+  sub: "สมัครงาน (5 โรค)"
+}, {
+  key: "cert_other",
+  label: "ใบรับรองแพทย์",
+  sub: "อื่นๆ"
+},
+// ผลตรวจเพิ่มเติม (ใบรับรอง + ก่อนเข้าทำงาน)
+{
+  key: "extra_pregnancy",
+  label: "ผลตรวจเพิ่มเติม",
+  sub: "ตรวจการตั้งครรภ์ (UPT)"
+}, {
+  key: "extra_hepb",
+  label: "ผลตรวจเพิ่มเติม",
+  sub: "ไวรัสตับอักเสบบี (HBsAg)"
+}, {
+  key: "extra_antihbs",
+  label: "ผลตรวจเพิ่มเติม",
+  sub: "ภูมิคุ้มกันตับอักเสบบี (Anti-HBs)"
+}, {
+  key: "extra_drug",
+  label: "ผลตรวจเพิ่มเติม",
+  sub: "สารเสพติด (Urine Amphetamine)"
+}, {
+  key: "extra_ecg",
+  label: "ผลตรวจเพิ่มเติม",
+  sub: "คลื่นไฟฟ้าหัวใจ (EKG)"
+},
+// ยาคุม
+{
+  key: "contra_dmpa1",
+  label: "ฉีดยาคุม/ฝังยาคุม",
+  sub: "ฉีดยาคุม DMPA (1 เดือน)"
+}, {
+  key: "contra_dmpa3",
+  label: "ฉีดยาคุม/ฝังยาคุม",
+  sub: "ฉีดยาคุม DMPA (3 เดือน)"
+}, {
+  key: "contra_implanon",
+  label: "ฉีดยาคุม/ฝังยาคุม",
+  sub: "ฝังเข็มยาคุม Implanon (3 ปี)"
+},
+// ตรวจเลือด — รายการหลัก
+{
+  key: "blood_abo",
+  label: "ตรวจเลือด",
+  sub: "กรุ๊ปเลือด (ABO, Rh)"
+}, {
+  key: "blood_cbc",
+  label: "ตรวจเลือด",
+  sub: "CBC"
+}, {
+  key: "blood_fbs",
+  label: "ตรวจเลือด",
+  sub: "FBS (น้ำตาล)"
+}, {
+  key: "blood_lipid",
+  label: "ตรวจเลือด",
+  sub: "ไขมัน (Cholesterol/LDL/HDL/TG)"
+}, {
+  key: "blood_liver",
+  label: "ตรวจเลือด",
+  sub: "การทำงานตับ (AST/ALT)"
+}, {
+  key: "blood_renal",
+  label: "ตรวจเลือด",
+  sub: "การทำงานไต (BUN/Cr)"
+}, {
+  key: "blood_uric",
+  label: "ตรวจเลือด",
+  sub: "กรดยูริก (Uric)"
+}, {
+  key: "blood_hba1c",
+  label: "ตรวจเลือด",
+  sub: "HbA1C"
+}, {
+  key: "blood_std",
+  label: "ตรวจเลือด",
+  sub: "โรคติดต่อทางเพศสัมพันธ์"
 }];
 
 // ดึง dateKey (yyyy-mm-dd) จาก booking object — ใช้ dateKey ถ้ามี ไม่งั้น parse จาก date
@@ -3284,16 +3476,22 @@ function PriceRow({
   const entry = prices[item.key];
   const amount = entry && typeof entry === "object" ? entry.amount : entry !== undefined && entry !== "" ? entry : "";
   const isStarting = entry && typeof entry === "object" ? !!entry.isStarting : false;
-  function updatePrice(newAmount, newIsStarting) {
+  const priceNote = entry && typeof entry === "object" ? entry.note || "" : "";
+  function updatePrice(newAmount, newIsStarting, newNote) {
     const np = {
       ...prices
     };
+    const nt = newNote !== undefined ? newNote : priceNote;
     if (newAmount === "" || newAmount === undefined) {
       delete np[item.key];
     } else {
-      np[item.key] = newIsStarting ? {
+      const hasExtra = newIsStarting || nt;
+      np[item.key] = hasExtra ? {
         amount: Number(newAmount),
-        isStarting: true
+        isStarting: !!newIsStarting,
+        ...(nt ? {
+          note: nt
+        } : {})
       } : Number(newAmount);
     }
     setPrices(np);
@@ -3377,7 +3575,35 @@ function PriceRow({
       accentColor: "#0369a1"
     },
     onChange: e => updatePrice(amount, e.target.checked)
-  }), isStarting ? `✅ แสดงเป็น "เริ่มต้นที่ ${amount ? Number(amount).toLocaleString() : ""} บาท"` : `ติ๊กเพื่อแสดงเป็น "เริ่มต้นที่ ${amount ? Number(amount).toLocaleString() : ""} บาท"`));
+  }), isStarting ? `✅ แสดงเป็น "เริ่มต้นที่ ${amount ? Number(amount).toLocaleString() : ""} บาท"` : `ติ๊กเพื่อแสดงเป็น "เริ่มต้นที่ ${amount ? Number(amount).toLocaleString() : ""} บาท"`), amount !== "" && amount !== undefined && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    placeholder: item.note || "หมายเหตุสำหรับผู้ป่วย (ไม่บังคับ)",
+    value: priceNote,
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      padding: "6px 10px",
+      fontSize: 12,
+      outline: "none",
+      fontFamily: "inherit",
+      color: "#475569"
+    },
+    onChange: e => updatePrice(amount, isStarting, e.target.value)
+  })), !priceNote && item.note && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#f97316",
+      marginTop: 6,
+      padding: "4px 8px",
+      background: "#fff7ed",
+      borderRadius: 6
+    }
+  }, "\uD83D\uDCA1 ", item.note));
 }
 function AdminPanel({
   onExit,
@@ -5464,12 +5690,12 @@ function App() {
 
   // โหลด schedule จาก server ตอนเริ่มต้น
   useEffect(() => {
+    // โหลด schedule
     fetch(SCRIPT_URL + "?action=getSchedule").then(r => r.json()).then(data => {
       if (data.success) {
         setClosedDates(data.closedDates || []);
         setOpenDates(data.openDates || {});
         if (data.daysOpen && Object.keys(data.daysOpen).length > 0) {
-          // convert string keys from JSON back to numbers
           const dop = {};
           Object.entries(data.daysOpen).forEach(([k, v]) => {
             dop[Number(k)] = v;
@@ -5478,6 +5704,11 @@ function App() {
         }
       }
     }).catch(() => {}).finally(() => setScheduleLoaded(true));
+
+    // โหลด prices — ให้ผู้ป่วยเห็นราคาตั้งแต่เปิดหน้า
+    fetch(SCRIPT_URL + "?action=getPrices").then(r => r.json()).then(data => {
+      if (data.success && data.prices) setPricesRoot(data.prices);
+    }).catch(() => {});
   }, []);
   if (mode === "admin") return /*#__PURE__*/React.createElement(AdminPanel, {
     onExit: () => setMode("patient"),
