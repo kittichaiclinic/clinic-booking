@@ -574,6 +574,25 @@ function ClinicBooking({
   const isBloodTest = selectedActivity?.id === 11;
   const EXPANDABLE = [1, 2, 4, 6, 7, 8, 9, 10, 11];
 
+  // helper แสดงราคาใน sub-option
+  function subPrice(key) {
+    if (!prices || !key || prices[key] === undefined) return null;
+    const pe = prices[key];
+    const pp = typeof pe === "object" ? pe : {
+      amount: pe,
+      isStarting: false
+    };
+    return /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11,
+        fontWeight: 700,
+        color: "#16a34a",
+        marginLeft: 6,
+        flexShrink: 0
+      }
+    }, pp.isStarting ? "เริ่ม" : "", Number(pp.amount).toLocaleString(), " \u0E3F");
+  }
+
   // ── คำนวณราคาจาก prices + บริการที่เลือก ──
   function getServicePrice() {
     if (!selectedActivity || !prices) return null;
@@ -758,18 +777,15 @@ function ClinicBooking({
   // หาราคาแสดงใน activity card (ราคาต่ำสุดของบริการนั้น)
   function getActivityStartingPrice(actId) {
     if (!prices || Object.keys(prices).length === 0) return null;
+    // บริการที่มี sub-selection — ไม่แสดงราคาใน card หลัก ให้แสดงใน panel ย่อยแทน
+    const HAS_SUB = new Set([1, 4, 7, 8, 10, 11]);
+    if (HAS_SUB.has(actId)) return null;
     const keysByActivity = {
-      1: ["checkup_basic", "checkup_std", "checkup_prem"],
       2: ["preemploy"],
       3: ["slimpen"],
-      4: ["us_whole", "us_upper", "us_lower", "us_ob", "us_small"],
       5: ["implant"],
       6: ["general"],
-      7: ["cert_drive", "cert_job", "cert_other"],
-      8: ["vac_fluarix", "vac_influ3", "vac_hep_b", "vac_hep_a", "vac_tt", "vac_rabies", "vac_hpv"],
       9: ["wound"],
-      10: ["contra_dmpa1", "contra_dmpa3", "contra_implanon"],
-      11: ["blood_abo", "blood_cbc", "blood_fbs", "blood_lipid", "blood_liver", "blood_renal", "blood_uric", "blood_hba1c", "blood_std"],
       12: ["ekg"]
     };
     const keys = keysByActivity[actId] || [];
@@ -1323,6 +1339,7 @@ function ClinicBooking({
       label: "Basic Program",
       price: "1,100",
       priceOrig: "1,550",
+      priceKey: "checkup_basic",
       color: "#0ea5e9",
       bg: "#e0f2fe",
       items: ["ตรวจร่างกายโดยแพทย์", "วัดความดัน / หัวใจ", "BMI", "CBC", "FBS", "LDL", "Cr", "Uric", "AST/ALT", "ปัสสาวะ"]
@@ -1331,6 +1348,7 @@ function ClinicBooking({
       label: "Standard Program",
       price: "2,300",
       priceOrig: "2,850",
+      priceKey: "checkup_std",
       color: "#8b5cf6",
       bg: "#ede9fe",
       items: ["ทุกอย่างใน Basic", "HbA1C", "Cholesterol / HDL / TG", "BUN", "Alkaline Phos", "Bilirubin", "Protein", "Albumin/Globulin"]
@@ -1339,6 +1357,7 @@ function ClinicBooking({
       label: "Premium Program",
       price: "2,950",
       priceOrig: "4,250",
+      priceKey: "checkup_prem",
       color: "#f59e0b",
       bg: "#fef3c7",
       items: ["ทุกอย่างใน Standard", "EKG 12 leads", "อัลตร้าซาวด์ช่องท้องส่วนบน"]
@@ -1395,20 +1414,34 @@ function ClinicBooking({
         style: {
           textAlign: "right"
         }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontSize: 11,
-          color: "#94a3b8",
-          textDecoration: "line-through",
-          display: "block"
-        }
-      }, "\u0E3F", prog.priceOrig), /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontSize: 16,
-          fontWeight: 800,
-          color: prog.color
-        }
-      }, "\u0E3F", prog.price))), pSel && /*#__PURE__*/React.createElement("div", {
+      }, (() => {
+        const pe = prog.priceKey && prices[prog.priceKey];
+        const pp = pe && (typeof pe === "object" ? pe : {
+          amount: pe,
+          isStarting: false
+        });
+        if (pp) return /*#__PURE__*/React.createElement("span", {
+          style: {
+            fontSize: 16,
+            fontWeight: 800,
+            color: prog.color
+          }
+        }, pp.isStarting ? "เริ่ม " : "", Number(pp.amount).toLocaleString(), " \u0E3F");
+        return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+          style: {
+            fontSize: 11,
+            color: "#94a3b8",
+            textDecoration: "line-through",
+            display: "block"
+          }
+        }, "\u0E3F", prog.priceOrig), /*#__PURE__*/React.createElement("span", {
+          style: {
+            fontSize: 16,
+            fontWeight: 800,
+            color: prog.color
+          }
+        }, "\u0E3F", prog.price));
+      })())), pSel && /*#__PURE__*/React.createElement("div", {
         style: {
           padding: "10px 14px"
         }
@@ -1693,31 +1726,38 @@ function ClinicBooking({
     }, [{
       id: "fluarix",
       name: "วัคซีนป้องกันไข้หวัดใหญ่ชนิด 4 สายพันธุ์",
-      brand: "Fluarix"
+      brand: "Fluarix",
+      priceKey: "vac_fluarix"
     }, {
       id: "speeda",
       name: "วัคซีนป้องกันพิษสุนัขบ้า",
-      brand: "Speeda"
+      brand: "Speeda",
+      priceKey: "vac_rabies"
     }, {
       id: "tt",
       name: "วัคซีนบาดทะยัก",
-      brand: "Tt"
+      brand: "Tt",
+      priceKey: "vac_tt"
     }, {
       id: "engerix",
       name: "วัคซีนป้องกันไวรัสตับอักเสบบี",
-      brand: "Engerix-B"
+      brand: "Engerix-B",
+      priceKey: "vac_hep_b"
     }, {
       id: "havrix",
       name: "วัคซีนป้องกันไวรัสตับอักเสบเอ",
-      brand: "Havrix"
+      brand: "Havrix",
+      priceKey: "vac_hep_a"
     }, {
       id: "twinrix",
       name: "วัคซีนป้องกันไวรัสตับอักเสบ เอ และ บี",
-      brand: "Twinrix"
+      brand: "Twinrix",
+      priceKey: "vac_hep_b"
     }, {
       id: "varivax",
       name: "วัคซีนป้องกันสุกใส",
-      brand: "Varivax"
+      brand: "Varivax",
+      priceKey: "vac_hpv"
     }].map(vac => {
       const checked = selectedVaccines.includes(vac.id);
       return /*#__PURE__*/React.createElement("div", {
@@ -1769,7 +1809,24 @@ function ClinicBooking({
           color: "#94a3b8",
           marginTop: 1
         }
-      }, vac.brand)));
+      }, vac.brand)), (() => {
+        const pk = vac.priceKey;
+        const pe = pk && prices[pk];
+        if (!pe) return null;
+        const pp = typeof pe === "object" ? pe : {
+          amount: pe,
+          isStarting: false
+        };
+        return /*#__PURE__*/React.createElement("div", {
+          style: {
+            fontSize: 12,
+            fontWeight: 700,
+            color: checked ? "#c2410c" : "#16a34a",
+            flexShrink: 0,
+            marginLeft: 4
+          }
+        }, pp.isStarting ? "เริ่ม" : "", Number(pp.amount).toLocaleString(), " \u0E3F");
+      })());
     })), selectedVaccines.length > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 10,
@@ -1884,19 +1941,22 @@ function ClinicBooking({
       title: "ฉีดยาคุมกำเนิด (DMPA)",
       sub: "ชนิด 1 เดือน",
       badge: "1 เดือน",
-      badgeColor: "#a855f7"
+      badgeColor: "#a855f7",
+      priceKey: "contra_dmpa1"
     }, {
       id: "dmpa3",
       title: "ฉีดยาคุมกำเนิด (DMPA)",
       sub: "ชนิด 3 เดือน",
       badge: "3 เดือน",
-      badgeColor: "#7c3aed"
+      badgeColor: "#7c3aed",
+      priceKey: "contra_dmpa3"
     }, {
       id: "implanon",
       title: "ฝังเข็มยาคุมกำเนิด (Implanon)",
       sub: "คุมได้นาน 3 ปี",
       badge: "3 ปี",
-      badgeColor: "#ec4899"
+      badgeColor: "#ec4899",
+      priceKey: "contra_implanon"
     }].map(opt => {
       const sel2 = contraMethod === opt.id;
       return /*#__PURE__*/React.createElement("div", {
@@ -1949,15 +2009,22 @@ function ClinicBooking({
         }
       }, opt.sub)), /*#__PURE__*/React.createElement("div", {
         style: {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: 2,
+          flexShrink: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
           background: sel2 ? opt.badgeColor : "#f1f5f9",
           color: sel2 ? "#fff" : "#94a3b8",
           fontSize: 11,
           fontWeight: 700,
           borderRadius: 20,
-          padding: "3px 10px",
-          flexShrink: 0
+          padding: "3px 10px"
         }
-      }, opt.badge));
+      }, opt.badge), subPrice(opt.priceKey)));
     }))), act.id === 11 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       style: s.expandLabel
     }, "\uD83E\uDE78 \u0E40\u0E25\u0E37\u0E2D\u0E01\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08\u0E40\u0E25\u0E37\u0E2D\u0E14 ", /*#__PURE__*/React.createElement("span", {
@@ -1979,19 +2046,23 @@ function ClinicBooking({
     }, [{
       id: "std",
       label: "โปรแกรมตรวจโรคติดต่อทางเพศสัมพันธ์",
-      sub: "HIV, ซิฟิลิส RPR, ไวรัสตับอักเสบบี HBsAg"
+      sub: "HIV, ซิฟิลิส RPR, ไวรัสตับอักเสบบี HBsAg",
+      priceKey: "blood_std"
     }, {
       id: "thyroid",
       label: "ตรวจระดับฮอร์โมนไธรอยด์",
-      sub: "FT4, TSH"
+      sub: "FT4, TSH",
+      priceKey: null
     }, {
       id: "blood_group",
       label: "ตรวจกรุ๊ปเลือด",
-      sub: "ABO, Rh"
+      sub: "ABO, Rh",
+      priceKey: "blood_abo"
     }, {
       id: "other",
       label: "ตรวจเลือดอื่นๆ (ระบุ)",
-      sub: "ระบุรายการที่ต้องการ"
+      sub: "ระบุรายการที่ต้องการ",
+      priceKey: null
     }].map(item => {
       const checked = bloodTests.includes(item.id);
       return /*#__PURE__*/React.createElement("div", {
@@ -2045,7 +2116,7 @@ function ClinicBooking({
           color: "#94a3b8",
           marginTop: 2
         }
-      }, item.sub))), item.id === "other" && checked && /*#__PURE__*/React.createElement("input", {
+      }, item.sub)), item.priceKey && subPrice(item.priceKey)), item.id === "other" && checked && /*#__PURE__*/React.createElement("input", {
         style: {
           ...s.input,
           marginTop: 6,
@@ -2652,7 +2723,7 @@ function ClinicBooking({
       fontWeight: 600,
       marginBottom: 4
     }
-  }, "\uD83D\uDCB0 \u0E04\u0E48\u0E32\u0E43\u0E0A\u0E49\u0E08\u0E48\u0E32\u0E22 (\u0E1B\u0E23\u0E30\u0E21\u0E32\u0E13)"), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCB0 \u0E04\u0E48\u0E32\u0E43\u0E0A\u0E49\u0E08\u0E48\u0E32\u0E22"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 28,
       fontWeight: 800,
@@ -3196,6 +3267,173 @@ function generateBookingImage({
 // ─────────────────────────────────────────────────────────────
 // ADMIN PANEL
 // ─────────────────────────────────────────────────────────────
+// ราคาตัวอย่าง — ใช้เมื่อยังไม่ได้กำหนดราคาจริงใน Admin
+// ทุกรายการมี isStarting:true เพื่อแสดงว่าเป็นราคาโดยประมาณ
+const DEMO_PRICES = {
+  general: {
+    amount: 300,
+    isStarting: true,
+    note: "ราคาอาจแตกต่างตามการวินิจฉัย"
+  },
+  wound: {
+    amount: 300,
+    isStarting: true,
+    note: "ราคาขึ้นกับขนาดและความซับซ้อนของแผล"
+  },
+  ekg: {
+    amount: 300,
+    isStarting: false
+  },
+  implant: {
+    amount: 500,
+    isStarting: false
+  },
+  preemploy: {
+    amount: 500,
+    isStarting: true
+  },
+  slimpen: {
+    amount: 500,
+    isStarting: true
+  },
+  checkup_basic: {
+    amount: 1100,
+    isStarting: false
+  },
+  checkup_std: {
+    amount: 2300,
+    isStarting: false
+  },
+  checkup_prem: {
+    amount: 2950,
+    isStarting: false
+  },
+  cert_drive: {
+    amount: 100,
+    isStarting: false
+  },
+  cert_job: {
+    amount: 200,
+    isStarting: false
+  },
+  cert_other: {
+    amount: 100,
+    isStarting: true
+  },
+  extra_pregnancy: {
+    amount: 100,
+    isStarting: false
+  },
+  extra_hepb: {
+    amount: 150,
+    isStarting: false
+  },
+  extra_antihbs: {
+    amount: 150,
+    isStarting: false
+  },
+  extra_drug: {
+    amount: 200,
+    isStarting: false
+  },
+  extra_ecg: {
+    amount: 300,
+    isStarting: false
+  },
+  us_whole: {
+    amount: 800,
+    isStarting: false
+  },
+  us_upper: {
+    amount: 600,
+    isStarting: false
+  },
+  us_lower: {
+    amount: 600,
+    isStarting: false
+  },
+  us_ob: {
+    amount: 500,
+    isStarting: false
+  },
+  us_small: {
+    amount: 500,
+    isStarting: true,
+    note: "ราคาขึ้นกับบริเวณที่ตรวจ"
+  },
+  contra_dmpa1: {
+    amount: 350,
+    isStarting: false
+  },
+  contra_dmpa3: {
+    amount: 500,
+    isStarting: false
+  },
+  contra_implanon: {
+    amount: 3500,
+    isStarting: false
+  },
+  blood_abo: {
+    amount: 100,
+    isStarting: false
+  },
+  blood_cbc: {
+    amount: 150,
+    isStarting: false
+  },
+  blood_fbs: {
+    amount: 100,
+    isStarting: false
+  },
+  blood_lipid: {
+    amount: 300,
+    isStarting: false
+  },
+  blood_liver: {
+    amount: 200,
+    isStarting: false
+  },
+  blood_renal: {
+    amount: 200,
+    isStarting: false
+  },
+  blood_uric: {
+    amount: 150,
+    isStarting: false
+  },
+  blood_hba1c: {
+    amount: 200,
+    isStarting: false
+  },
+  blood_std: {
+    amount: 500,
+    isStarting: false
+  },
+  vac_fluarix: {
+    amount: 600,
+    isStarting: false
+  },
+  vac_rabies: {
+    amount: 1000,
+    isStarting: false
+  },
+  vac_tt: {
+    amount: 200,
+    isStarting: false
+  },
+  vac_hep_b: {
+    amount: 400,
+    isStarting: false
+  },
+  vac_hep_a: {
+    amount: 800,
+    isStarting: false
+  },
+  vac_hpv: {
+    amount: 3500,
+    isStarting: false
+  }
+};
 const ADMIN_PIN = "kc88888888";
 
 // โครงสร้างราคา — key ต้องตรงกับที่ใช้ใน state
@@ -5707,8 +5945,15 @@ function App() {
 
     // โหลด prices — ให้ผู้ป่วยเห็นราคาตั้งแต่เปิดหน้า
     fetch(SCRIPT_URL + "?action=getPrices").then(r => r.json()).then(data => {
-      if (data.success && data.prices) setPricesRoot(data.prices);
-    }).catch(() => {});
+      if (data.success && data.prices && Object.keys(data.prices).length > 0) {
+        setPricesRoot(data.prices);
+      } else {
+        // ยังไม่ได้กำหนดราคา → ใช้ราคาตัวอย่าง (แสดงเป็น "เริ่มต้นที่")
+        setPricesRoot(DEMO_PRICES);
+      }
+    }).catch(() => {
+      setPricesRoot(DEMO_PRICES);
+    });
   }, []);
   if (mode === "admin") return /*#__PURE__*/React.createElement(AdminPanel, {
     onExit: () => setMode("patient"),
