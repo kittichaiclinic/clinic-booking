@@ -409,24 +409,29 @@ const ACTIVITIES = [{
 const ULTRASOUND_OPTIONS = [{
   id: "whole",
   label: "อัลตร้าซาวด์ช่องท้องส่วนบนและล่าง",
-  sub: "Whole Abdomen"
+  sub: "Whole Abdomen",
+  priceKey: "us_whole"
 }, {
   id: "upper",
   label: "อัลตร้าซาวด์ช่องท้องส่วนบน",
-  sub: "Upper Abdomen"
+  sub: "Upper Abdomen",
+  priceKey: "us_upper"
 }, {
   id: "lower",
   label: "อัลตร้าซาวด์ช่องท้องส่วนล่าง",
-  sub: "Lower Abdomen"
+  sub: "Lower Abdomen",
+  priceKey: "us_lower"
 }, {
   id: "ob",
   label: "อัลตร้าซาวด์ครรภ์",
-  sub: "OB"
+  sub: "OB",
+  priceKey: "us_ob"
 }, {
   id: "small",
   label: "อัลตร้าซาวด์ส่วนเล็ก",
   sub: "Small Part — เช่น ก้อนใต้ผิวหนัง ต่อมน้ำเหลือง ต่อมไธรอยด์ ฯลฯ",
-  needNote: true
+  needNote: true,
+  priceKey: "us_small"
 }];
 const TIME_SLOTS_WEEKDAY = ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30"];
 const TIME_SLOTS_WEEKEND = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30"];
@@ -1488,7 +1493,8 @@ function ClinicBooking({
       tests: preEmployTests,
       setTests: setPreEmployTests,
       other: preEmployOther,
-      setOther: setPreEmployOther
+      setOther: setPreEmployOther,
+      prices: prices
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 10,
@@ -1567,7 +1573,7 @@ function ClinicBooking({
           color: "#94a3b8",
           marginTop: 2
         }
-      }, opt.sub))), opt.needNote && optSel && /*#__PURE__*/React.createElement("input", {
+      }, opt.sub)), subPrice(opt.priceKey)), opt.needNote && optSel && /*#__PURE__*/React.createElement("input", {
         style: {
           ...s.input,
           background: "#f0fdfe",
@@ -1615,13 +1621,16 @@ function ClinicBooking({
       }
     }, [{
       id: "drive",
-      label: "ทำ / ต่อใบขับขี่"
+      label: "ทำ / ต่อใบขับขี่",
+      priceKey: "cert_drive"
     }, {
       id: "job",
-      label: "สมัครงาน (ใบรับรองแพทย์ 5 โรค)"
+      label: "สมัครงาน (ใบรับรองแพทย์ 5 โรค)",
+      priceKey: "cert_job"
     }, {
       id: "other",
-      label: "อื่นๆ (ระบุรายละเอียด)"
+      label: "อื่นๆ (ระบุรายละเอียด)",
+      priceKey: "cert_other"
     }].map(ct => {
       const ctSel = certType === ct.id;
       return /*#__PURE__*/React.createElement("div", {
@@ -1666,7 +1675,7 @@ function ClinicBooking({
           fontWeight: ctSel ? 700 : 400,
           color: ctSel ? "#1e293b" : "#475569"
         }
-      }, ct.label));
+      }, ct.label), subPrice(ct.priceKey));
     })), certType === "other" && /*#__PURE__*/React.createElement("textarea", {
       style: {
         ...s.input,
@@ -1694,7 +1703,8 @@ function ClinicBooking({
       tests: certExtraTests,
       setTests: setCertExtraTests,
       other: certExtraOther,
-      setOther: setCertExtraOther
+      setOther: setCertExtraOther,
+      prices: prices
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 10,
@@ -2816,32 +2826,56 @@ function PreEmployExtras({
   tests,
   setTests,
   other,
-  setOther
+  setOther,
+  prices = {}
 }) {
+  function subPriceLocal(key) {
+    if (!prices || !key || prices[key] === undefined) return null;
+    const pe = prices[key];
+    const pp = typeof pe === "object" ? pe : {
+      amount: pe,
+      isStarting: false
+    };
+    return React.createElement('span', {
+      style: {
+        fontSize: 11,
+        fontWeight: 700,
+        color: "#16a34a",
+        marginLeft: 6,
+        flexShrink: 0
+      }
+    }, (pp.isStarting ? "เริ่ม" : "") + Number(pp.amount).toLocaleString() + " ฿");
+  }
   const items = [{
     id: "pregnancy",
     label: "ตรวจการตั้งครรภ์",
-    sub: "UPT"
+    sub: "UPT",
+    priceKey: "extra_pregnancy"
   }, {
     id: "hepb",
     label: "ไวรัสตับอักเสบบี",
-    sub: "HBsAg"
+    sub: "HBsAg",
+    priceKey: "extra_hepb"
   }, {
     id: "antihbs",
     label: "ตรวจภูมิคุ้มกันไวรัสตับอักเสบบี",
-    sub: "Anti-HBs"
+    sub: "Anti-HBs",
+    priceKey: "extra_antihbs"
   }, {
     id: "drug",
     label: "สารเสพติด",
-    sub: "Urine Amphetamine"
+    sub: "Urine Amphetamine",
+    priceKey: "extra_drug"
   }, {
     id: "ecg",
     label: "คลื่นไฟฟ้าหัวใจ",
-    sub: "EKG"
+    sub: "EKG",
+    priceKey: "extra_ecg"
   }, {
     id: "extraOther",
     label: "อื่นๆ (ระบุ)",
-    sub: ""
+    sub: "",
+    priceKey: null
   }];
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2941,7 +2975,7 @@ function PreEmployExtras({
         color: "#94a3b8",
         marginLeft: 6
       }
-    }, "(", ex.sub, ")"))), ex.id === "extraOther" && checked && /*#__PURE__*/React.createElement("input", {
+    }, "(", ex.sub, ")")), ex.priceKey && subPriceLocal(ex.priceKey)), ex.id === "extraOther" && checked && /*#__PURE__*/React.createElement("input", {
       style: {
         ...s.input,
         marginTop: 6,
