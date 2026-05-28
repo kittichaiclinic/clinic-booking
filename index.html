@@ -1767,7 +1767,7 @@ function ClinicBooking({
       id: "varivax",
       name: "วัคซีนป้องกันสุกใส",
       brand: "Varivax",
-      priceKey: "vac_hpv"
+      priceKey: "vac_varicella"
     }].map(vac => {
       const checked = selectedVaccines.includes(vac.id);
       return /*#__PURE__*/React.createElement("div", {
@@ -3466,6 +3466,10 @@ const DEMO_PRICES = {
   vac_hpv: {
     amount: 3500,
     isStarting: false
+  },
+  vac_varicella: {
+    amount: 1500,
+    isStarting: false
   }
 };
 const ADMIN_PIN = "kc88888888";
@@ -3569,6 +3573,10 @@ const PRICE_CONFIG = [{
   key: "vac_hpv",
   label: "ฉีดวัคซีน",
   sub: "HPV"
+}, {
+  key: "vac_varicella",
+  label: "ฉีดวัคซีน",
+  sub: "สุกใส (Varivax)"
 },
 // ใบรับรองแพทย์ — แยกตามประเภท
 {
