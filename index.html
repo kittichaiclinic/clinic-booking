@@ -2840,29 +2840,40 @@ function ClinicBooking({
     label: "\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38",
     value: form.note
   })), (() => {
-    const keys2 = {
-      1: ["checkup_basic", "checkup_std", "checkup_prem"],
-      2: ["preemploy"],
-      3: ["slimpen"],
-      4: ["us_whole", "us_upper", "us_lower", "us_ob", "us_small"],
-      5: ["implant"],
-      6: ["general"],
-      7: ["cert_drive", "cert_job", "cert_other"],
-      8: ["vac_fluarix"],
-      9: ["wound"],
-      10: ["contra_dmpa1", "contra_dmpa3", "contra_implanon"],
-      11: ["blood_cbc"],
-      12: ["ekg"]
-    };
-    const actKeys = keys2[selectedActivity && selectedActivity.id] || [];
-    let cond = "";
-    for (let i = 0; i < actKeys.length && !cond; i++) {
-      const pe = prices[actKeys[i]];
-      cond = pe && typeof pe === "object" ? pe.condition || "" : "";
-      if (!cond) {
-        const cfg = PRICE_CONFIG.find(c => c.key === actKeys[i]);
-        cond = cfg && cfg.condition || "";
-      }
+    if (!selectedActivity) return null;
+    const id = selectedActivity.id;
+    // ดึง key เฉพาะที่เลือกจริง
+    let condKey = null;
+    if (id === 1) condKey = checkupProgram === "basic" ? "checkup_basic" : checkupProgram === "std" ? "checkup_std" : checkupProgram === "prem" ? "checkup_prem" : "checkup_basic";else if (id === 2) condKey = "preemploy";else if (id === 3) condKey = "slimpen";else if (id === 4) {
+      const usMap = {
+        whole: "us_whole",
+        upper: "us_upper",
+        lower: "us_lower",
+        ob: "us_ob",
+        small: "us_small"
+      };
+      condKey = usMap[ultrasoundType] || null;
+    } else if (id === 5) condKey = "implant";else if (id === 6) condKey = "general";else if (id === 7) {
+      const cMap = {
+        drive: "cert_drive",
+        job: "cert_job",
+        other: "cert_other"
+      };
+      condKey = cMap[certType] || null;
+    } else if (id === 9) condKey = "wound";else if (id === 10) {
+      const coMap = {
+        dmpa1: "contra_dmpa1",
+        dmpa3: "contra_dmpa3",
+        implanon: "contra_implanon"
+      };
+      condKey = coMap[contraMethod] || null;
+    } else if (id === 12) condKey = "ekg";
+    if (!condKey) return null;
+    const pe = prices[condKey];
+    let cond = pe && typeof pe === "object" ? pe.condition || "" : "";
+    if (!cond) {
+      const cfg = PRICE_CONFIG.find(c => c.key === condKey);
+      cond = cfg && cfg.condition || "";
     }
     if (!cond) return null;
     return /*#__PURE__*/React.createElement("div", {
