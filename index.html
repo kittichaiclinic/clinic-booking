@@ -524,6 +524,9 @@ function ClinicBooking({
   openDates = [],
   daysOpen = DAYS_OPEN_DEFAULT,
   prices = {},
+  totalPatients = null,
+  newsItems = [],
+  equipStatus = {},
   onCheckBooking = () => {},
   onAdminLogin = () => {}
 }) {
@@ -591,7 +594,7 @@ function ClinicBooking({
       style: {
         fontSize: 11,
         fontWeight: 700,
-        color: "#16a34a",
+        color: "#0369a1",
         marginLeft: 6,
         flexShrink: 0
       }
@@ -642,6 +645,7 @@ function ClinicBooking({
         "influ3": "vac_influ3",
         "hep_b": "vac_hep_b",
         "hep_a": "vac_hep_a",
+        "havrix_ped": "vac_hep_a_ped",
         "tt": "vac_tt",
         "rabies": "vac_rabies",
         "hpv": "vac_hpv"
@@ -766,16 +770,18 @@ function ClinicBooking({
   }
   const servicePrice = getServicePrice();
 
-  // helper — แปลง price entry เป็น { amount, isStarting }
+  // helper — แปลง price entry เป็น { amount, isStarting, note }
   function parsePrice(entry) {
     if (entry === undefined || entry === null || entry === "") return null;
     if (typeof entry === "object") return {
       amount: Number(entry.amount),
-      isStarting: !!entry.isStarting
+      isStarting: !!entry.isStarting,
+      note: entry.note || ""
     };
     return {
       amount: Number(entry),
-      isStarting: false
+      isStarting: false,
+      note: ""
     };
   }
 
@@ -799,13 +805,15 @@ function ClinicBooking({
     const amounts = parsed.map(p => p.amount);
     const min = Math.min(...amounts);
     const max = Math.max(...amounts);
-    // ถ้ามีตัวไหนติ๊ก isStarting ให้แสดง "เริ่มต้นที่"
     const anyStarting = parsed.some(p => p.isStarting);
+    // เอา note จากรายการแรกที่มีราคาต่ำสุด
+    const minEntry = parsed.find(p => p.amount === min);
     return {
       min,
       max,
       multi: min !== max,
-      isStarting: anyStarting || min !== max
+      isStarting: anyStarting || min !== max,
+      note: minEntry && minEntry.note ? minEntry.note : ""
     };
   }
   const detailComplete = !selectedActivity ? false : isUltrasound ? !!ultrasoundType && (ultrasoundType !== "small" || ultrasoundOther.trim().length > 0) : isGeneralCheckup ? symptoms.trim().length > 0 : isMedCert ? certType === "drive" || certType === "job" || certType === "other" && certOtherNote.trim().length > 0 : isWound ? woundDetail.trim().length > 0 : isAnnualCheckup ? !!checkupProgram : isVaccine ? selectedVaccines.length > 0 : isContra ? !!contraMethod : isBloodTest ? bloodTests.length > 0 && (!bloodTests.includes("other") || bloodOther.trim().length > 0) : true;
@@ -880,7 +888,7 @@ function ClinicBooking({
   const certExtraLabel = isMedCert && certType === "job" ? certNoExtra ? "ไม่ต้องการผลตรวจเพิ่มเติม" : certExtraTests.length > 0 ? [certExtraTests.includes("pregnancy") ? "ตรวจการตั้งครรภ์ (UPT)" : null, certExtraTests.includes("hepb") ? "ไวรัสตับอักเสบบี (HBsAg)" : null, certExtraTests.includes("antihbs") ? "ภูมิคุ้มกันตับอักเสบบี (Anti-HBs)" : null, certExtraTests.includes("drug") ? "สารเสพติด (Urine Amphetamine)" : null, certExtraTests.includes("ecg") ? "คลื่นไฟฟ้าหัวใจ (EKG)" : null, certExtraTests.includes("extraOther") && certExtraOther ? certExtraOther : null].filter(Boolean).join(", ") : null : null;
   const BLOOD_MAP = {
     std: "โปรแกรม STD (HIV, RPR, HBsAg)",
-    thyroid: "ฮอร์โมนไธรอยด์ (FT4, TSH)",
+    thyroid: "ฮอร์โมนไธรอยด์ (FT3, FT4, TSH)",
     blood_group: "กรุ๊ปเลือด (ABO, Rh)",
     other: bloodOther || "อื่นๆ"
   };
@@ -1048,7 +1056,8 @@ function ClinicBooking({
   if (confirmed) return /*#__PURE__*/React.createElement("div", {
     style: s.page
   }, /*#__PURE__*/React.createElement(Header, {
-    onCheckBooking: onCheckBooking
+    onCheckBooking: onCheckBooking,
+    totalPatients: totalPatients
   }), /*#__PURE__*/React.createElement("div", {
     style: s.successCard
   }, /*#__PURE__*/React.createElement("div", {
@@ -1242,7 +1251,8 @@ function ClinicBooking({
   return /*#__PURE__*/React.createElement("div", {
     style: s.page
   }, /*#__PURE__*/React.createElement(Header, {
-    onCheckBooking: onCheckBooking
+    onCheckBooking: onCheckBooking,
+    totalPatients: totalPatients
   }), /*#__PURE__*/React.createElement("div", {
     style: s.stepsWrap
   }, /*#__PURE__*/React.createElement("div", {
@@ -1268,7 +1278,51 @@ function ClinicBooking({
     }
   }, label))))), /*#__PURE__*/React.createElement("div", {
     style: s.content
-  }, step === 1 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, step === 1 && /*#__PURE__*/React.createElement("div", null, newsItems.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, newsItems.map((item, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      background: item.type === "urgent" ? "linear-gradient(90deg,#fef2f2,#fff1f2)" : item.type === "info" ? "linear-gradient(90deg,#eff6ff,#f0f9ff)" : "linear-gradient(90deg,#f0fdf4,#f0fdf4)",
+      border: `1px solid ${item.type === "urgent" ? "#fca5a5" : item.type === "info" ? "#93c5fd" : "#86efac"}`,
+      borderLeft: `4px solid ${item.type === "urgent" ? "#ef4444" : item.type === "info" ? "#3b82f6" : "#22c55e"}`,
+      borderRadius: 10,
+      padding: "10px 14px",
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 16,
+      flexShrink: 0
+    }
+  }, item.type === "urgent" ? "⚠️" : item.type === "info" ? "📢" : "✅"), /*#__PURE__*/React.createElement("div", null, item.title && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#1e293b",
+      marginBottom: 2
+    }
+  }, item.title), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "#475569",
+      lineHeight: 1.6
+    }
+  }, item.body), item.date && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "#94a3b8",
+      marginTop: 4
+    }
+  }, item.date)))))), /*#__PURE__*/React.createElement("h3", {
     style: s.sectionTitle
   }, "\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23"), /*#__PURE__*/React.createElement("div", {
     style: s.activityList
@@ -1303,17 +1357,94 @@ function ClinicBooking({
       }
     }, act.name), /*#__PURE__*/React.createElement("div", {
       style: s.activityDesc
-    }, act.desc), (() => {
+    }, act.desc), (act.id === 12 || act.id === 4) && (() => {
+      const key = act.id === 12 ? "ekg" : "us";
+      const st = equipStatus[key];
+      if (!st || st === "ready") return /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 10,
+          color: "#16a34a",
+          fontWeight: 600,
+          marginTop: 2,
+          display: "flex",
+          alignItems: "center",
+          gap: 3
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "#22c55e",
+          display: "inline-block"
+        }
+      }), "\u0E2D\u0E38\u0E1B\u0E01\u0E23\u0E13\u0E4C\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19");
+      return /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 10,
+          color: "#ef4444",
+          fontWeight: 600,
+          marginTop: 2,
+          display: "flex",
+          alignItems: "center",
+          gap: 3
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "#ef4444",
+          display: "inline-block"
+        }
+      }), st || "งดให้บริการชั่วคราว");
+    })(), (() => {
       const p = getActivityStartingPrice(act.id);
       if (!p) return null;
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: 11,
           fontWeight: 700,
-          color: isSel ? act.color : "#16a34a",
+          color: isSel ? act.color : "#0369a1",
           marginTop: 2
         }
-      }, p.isStarting || p.multi ? `เริ่มต้นที่ ${p.min.toLocaleString()} บาท` : `${p.min.toLocaleString()} บาท`);
+      }, p.isStarting || p.multi ? `เริ่มต้นที่ ${p.min.toLocaleString()} บาท` : `${p.min.toLocaleString()} บาท`), p.note && /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 10,
+          color: isSel ? "#475569" : "#f97316",
+          marginTop: 1,
+          fontStyle: "italic"
+        }
+      }, "\uD83D\uDCA1 ", p.note));
+    })(), (() => {
+      // แสดง duration จาก prices หรือ PRICE_CONFIG
+      const keys1 = {
+        1: ["checkup_basic"],
+        2: ["preemploy"],
+        3: ["slimpen"],
+        4: ["us_whole"],
+        5: ["implant"],
+        6: ["general"],
+        7: ["cert_drive"],
+        8: ["vac_fluarix"],
+        9: ["wound"],
+        10: ["contra_dmpa1"],
+        11: ["blood_cbc"],
+        12: ["ekg"]
+      };
+      const k = (keys1[act.id] || [])[0];
+      const pe = k && prices[k];
+      const dur = pe && typeof pe === "object" ? pe.duration : "";
+      const cfg = PRICE_CONFIG.find(c => c.key === k);
+      const durShow = dur || cfg && cfg.duration || "";
+      if (!durShow) return null;
+      return /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 10,
+          color: "#94a3b8",
+          marginTop: 1
+        }
+      }, "\u23F1\uFE0F ", durShow);
     })()), /*#__PURE__*/React.createElement("div", {
       style: {
         ...s.activityCheck,
@@ -1755,9 +1886,14 @@ function ClinicBooking({
       priceKey: "vac_hep_b"
     }, {
       id: "havrix",
-      name: "วัคซีนป้องกันไวรัสตับอักเสบเอ",
+      name: "วัคซีนป้องกันไวรัสตับอักเสบเอ โดสผู้ใหญ่ (อายุ 18 ปีขึ้นไป)",
       brand: "Havrix",
       priceKey: "vac_hep_a"
+    }, {
+      id: "havrix_ped",
+      name: "วัคซีนป้องกันไวรัสตับอักเสบเอ โดสเด็กและวัยรุ่น (อายุ 1-18 ปี)",
+      brand: "Havrix Junior",
+      priceKey: "vac_hep_a_ped"
     }, {
       id: "twinrix",
       name: "วัคซีนป้องกันไวรัสตับอักเสบ เอ และ บี",
@@ -1831,7 +1967,7 @@ function ClinicBooking({
           style: {
             fontSize: 12,
             fontWeight: 700,
-            color: checked ? "#c2410c" : "#16a34a",
+            color: checked ? "#c2410c" : "#0369a1",
             flexShrink: 0,
             marginLeft: 4
           }
@@ -2061,7 +2197,7 @@ function ClinicBooking({
     }, {
       id: "thyroid",
       label: "ตรวจระดับฮอร์โมนไธรอยด์",
-      sub: "FT4, TSH",
+      sub: "FT3, FT4, TSH",
       priceKey: null
     }, {
       id: "blood_group",
@@ -2332,50 +2468,48 @@ function ClinicBooking({
     style: s.sectionTitle
   }, "\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E41\u0E25\u0E30\u0E40\u0E27\u0E25\u0E32\u0E19\u0E31\u0E14"), /*#__PURE__*/React.createElement("div", {
     style: {
-      ...s.selectedChip,
-      background: selectedActivity.bg,
-      color: selectedActivity.color,
-      border: `1.5px solid ${selectedActivity.color}`,
-      marginBottom: 12,
-      fontSize: 12
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 14,
+      justifyContent: "space-between"
     }
-  }, selectedActivity.icon, " ", serviceLabel, " | ", form.name), /*#__PURE__*/React.createElement("div", {
-    style: s.calCard
-  }, /*#__PURE__*/React.createElement("div", {
-    style: s.calHeader
   }, /*#__PURE__*/React.createElement("button", {
-    style: s.calNavBtn,
+    style: s.navBtn,
     onClick: () => {
       if (calMonth === 0) {
-        setCalYear(y => y - 1);
         setCalMonth(11);
+        setCalYear(y => y - 1);
       } else setCalMonth(m => m - 1);
       setSelectedDate(null);
       setSelectedTime(null);
     }
   }, "\u2039"), /*#__PURE__*/React.createElement("span", {
-    style: s.calTitle
+    style: {
+      fontWeight: 700,
+      fontSize: 15,
+      color: "#1e293b"
+    }
   }, MONTHS_TH[calMonth], " ", calYear + 543), /*#__PURE__*/React.createElement("button", {
-    style: s.calNavBtn,
+    style: s.navBtn,
     onClick: () => {
       if (calMonth === 11) {
-        setCalYear(y => y + 1);
         setCalMonth(0);
+        setCalYear(y => y + 1);
       } else setCalMonth(m => m + 1);
       setSelectedDate(null);
       setSelectedTime(null);
     }
   }, "\u203A")), /*#__PURE__*/React.createElement("div", {
     style: s.calGrid
-  }, DAYS_TH.map(d => /*#__PURE__*/React.createElement("div", {
+  }, ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"].map(d => /*#__PURE__*/React.createElement("div", {
     key: d,
-    style: s.calDayLabel
+    style: s.calDayHeader
   }, d)), Array(firstDay).fill(null).map((_, i) => /*#__PURE__*/React.createElement("div", {
     key: "e" + i
   })), Array(daysInMonth).fill(null).map((_, i) => {
     const day = i + 1;
     const d = new Date(calYear, calMonth, day);
-    // ไม่ให้จองวันปัจจุบัน — ต้องจองวันถัดไปเป็นอย่างน้อย
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(tomorrowStart.getDate() + 1);
@@ -2391,12 +2525,10 @@ function ClinicBooking({
     const isSel = selectedDate === day;
     const isTdy = day === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
     const isHoliday = !!thaiHolidays[dKey];
-
-    // สีและ indicator ตามสถานะ
-    let dayBg = "transparent";
-    let dayColor = "#1e293b";
-    let dayBorder = "1px solid transparent";
-    let indicator = null;
+    let dayBg = "transparent",
+      dayColor = "#1e293b",
+      dayBorder = "1px solid transparent",
+      indicator = null;
     if (isSel) {
       dayBg = "#0ea5e9";
       dayColor = "#fff";
@@ -2533,10 +2665,9 @@ function ClinicBooking({
       fontSize: 13,
       fontWeight: 700,
       color: "#dc2626",
-      textAlign: "center",
-      animation: "fadeIn 0.2s"
+      textAlign: "center"
     }
-  }, "\uD83D\uDD34 \u0E1B\u0E34\u0E14\u0E17\u0E33\u0E01\u0E32\u0E23\u0E43\u0E19\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E2D\u0E37\u0E48\u0E19")), selectedDate && timeSlots.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDD34 \u0E1B\u0E34\u0E14\u0E17\u0E33\u0E01\u0E32\u0E23\u0E43\u0E19\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E2D\u0E37\u0E48\u0E19"), selectedDate && timeSlots.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 16
     }
@@ -2622,26 +2753,11 @@ function ClinicBooking({
       fontWeight: 600,
       boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
     }
-  }, "\u23F3 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E40\u0E27\u0E25\u0E32\u0E27\u0E48\u0E32\u0E07...")))), selectedDate && timeSlots.length === 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 16,
-      padding: "16px",
-      background: "#fef2f2",
-      border: "1px solid #fca5a5",
-      borderRadius: 12,
-      fontSize: 13,
-      color: "#dc2626",
-      textAlign: "center"
-    }
-  }, "\u274C \u0E27\u0E31\u0E19\u0E19\u0E35\u0E49\u0E04\u0E25\u0E34\u0E19\u0E34\u0E01\u0E1B\u0E34\u0E14\u0E17\u0E33\u0E01\u0E32\u0E23 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E2D\u0E37\u0E48\u0E19"), /*#__PURE__*/React.createElement("div", {
+  }, "\u23F3 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E40\u0E27\u0E25\u0E32\u0E27\u0E48\u0E32\u0E07...")))), /*#__PURE__*/React.createElement("div", {
     style: s.btnRow
   }, /*#__PURE__*/React.createElement("button", {
     style: s.backBtn,
-    onClick: () => {
-      setStep(2);
-      setSelectedDate(null);
-      setSelectedTime(null);
-    }
+    onClick: () => setStep(2)
   }, "\u2190 \u0E22\u0E49\u0E2D\u0E19\u0E01\u0E25\u0E31\u0E1A"), /*#__PURE__*/React.createElement("button", {
     style: {
       ...s.nextBtn,
@@ -2715,7 +2831,54 @@ function ClinicBooking({
     icon: "\uD83D\uDCDD",
     label: "\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E2B\u0E15\u0E38",
     value: form.note
-  })), /*#__PURE__*/React.createElement("div", {
+  })), (() => {
+    const keys2 = {
+      1: ["checkup_basic", "checkup_std", "checkup_prem"],
+      2: ["preemploy"],
+      3: ["slimpen"],
+      4: ["us_whole", "us_upper", "us_lower", "us_ob", "us_small"],
+      5: ["implant"],
+      6: ["general"],
+      7: ["cert_drive", "cert_job", "cert_other"],
+      8: ["vac_fluarix"],
+      9: ["wound"],
+      10: ["contra_dmpa1", "contra_dmpa3", "contra_implanon"],
+      11: ["blood_cbc"],
+      12: ["ekg"]
+    };
+    const actKeys = keys2[selectedActivity && selectedActivity.id] || [];
+    let cond = "";
+    for (let i = 0; i < actKeys.length && !cond; i++) {
+      const pe = prices[actKeys[i]];
+      cond = pe && typeof pe === "object" ? pe.condition || "" : "";
+      if (!cond) {
+        const cfg = PRICE_CONFIG.find(c => c.key === actKeys[i]);
+        cond = cfg && cfg.condition || "";
+      }
+    }
+    if (!cond) return null;
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: "#fef9ec",
+        border: "1.5px solid #fcd34d",
+        borderRadius: 12,
+        padding: "10px 14px",
+        marginBottom: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: "#92400e",
+        marginBottom: 2
+      }
+    }, "\uD83D\uDCCB \u0E40\u0E07\u0E37\u0E48\u0E2D\u0E19\u0E44\u0E02\u0E01\u0E48\u0E2D\u0E19\u0E23\u0E31\u0E1A\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        color: "#78350f"
+      }
+    }, cond));
+  })(), /*#__PURE__*/React.createElement("div", {
     style: s.warningBox
   }, "\u26A0\uFE0F \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E43\u0E2B\u0E49\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E48\u0E2D\u0E19\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19 \u0E2B\u0E32\u0E01\u0E15\u0E49\u0E2D\u0E07\u0E01\u0E32\u0E23\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E41\u0E08\u0E49\u0E07\u0E25\u0E48\u0E27\u0E07\u0E2B\u0E19\u0E49\u0E32\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E49\u0E2D\u0E22 2 \u0E0A\u0E31\u0E48\u0E27\u0E42\u0E21\u0E07"), servicePrice ? /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2733,7 +2896,7 @@ function ClinicBooking({
       fontWeight: 600,
       marginBottom: 4
     }
-  }, "\uD83D\uDCB0 \u0E04\u0E48\u0E32\u0E43\u0E0A\u0E49\u0E08\u0E48\u0E32\u0E22"), /*#__PURE__*/React.createElement("div", {
+  }, "\u0E04\u0E48\u0E32\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23 (\u0E0A\u0E33\u0E23\u0E30\u0E2B\u0E25\u0E31\u0E07\u0E40\u0E02\u0E49\u0E32\u0E23\u0E31\u0E1A\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23)"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 28,
       fontWeight: 800,
@@ -2764,13 +2927,7 @@ function ClinicBooking({
       borderRadius: 6,
       padding: "3px 8px"
     }
-  }, "\uD83D\uDCA1 ", servicePrice.note), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6ee7b7",
-      marginTop: 4
-    }
-  }, "*\u0E23\u0E32\u0E04\u0E32\u0E2D\u0E32\u0E08\u0E21\u0E35\u0E01\u0E32\u0E23\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E41\u0E1B\u0E25\u0E07\u0E15\u0E32\u0E21\u0E01\u0E32\u0E23\u0E27\u0E34\u0E19\u0E34\u0E08\u0E09\u0E31\u0E22")) : /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCA1 ", servicePrice.note)) : /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#f8fafc",
       border: "1px solid #e2e8f0",
@@ -2840,7 +2997,7 @@ function PreEmployExtras({
       style: {
         fontSize: 11,
         fontWeight: 700,
-        color: "#16a34a",
+        color: "#0369a1",
         marginLeft: 6,
         flexShrink: 0
       }
@@ -2993,27 +3150,32 @@ function PreEmployExtras({
 // Shared UI: Header, SummaryRow
 // ─────────────────────────────────────────────────────────────
 function Header({
-  onCheckBooking
+  onCheckBooking,
+  totalPatients
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: s.header
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      ...s.logoRow,
-      justifyContent: "space-between"
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 14
+      gap: 10,
+      flex: 1,
+      minWidth: 0
     }
   }, /*#__PURE__*/React.createElement("img", {
     src: CLINIC_LOGO,
     alt: "logo",
     style: {
-      width: 48,
-      height: 48,
+      width: 44,
+      height: 44,
       borderRadius: "50%",
       objectFit: "cover",
       background: "#fff",
@@ -3021,25 +3183,92 @@ function Header({
       flexShrink: 0,
       boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
     }
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: s.clinicName
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...s.clinicName,
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis"
+    }
   }, "\u0E04\u0E25\u0E34\u0E19\u0E34\u0E01\u0E41\u0E1E\u0E17\u0E22\u0E4C\u0E01\u0E34\u0E15\u0E15\u0E34\u0E0A\u0E31\u0E22"), /*#__PURE__*/React.createElement("div", {
     style: s.clinicSub
-  }, "\u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E2D\u0E07\u0E04\u0E34\u0E27\u0E2D\u0E2D\u0E19\u0E44\u0E25\u0E19\u0E4C\u0E25\u0E48\u0E27\u0E07\u0E2B\u0E19\u0E49\u0E32"))), /*#__PURE__*/React.createElement("button", {
+  }, "\u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E2D\u0E07\u0E04\u0E34\u0E27\u0E2D\u0E2D\u0E19\u0E44\u0E25\u0E19\u0E4C"), totalPatients !== null && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "rgba(255,255,255,0.85)",
+      marginTop: 2,
+      fontWeight: 600
+    }
+  }, "\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23\u0E2A\u0E30\u0E2A\u0E21 ", totalPatients.toLocaleString(), " \u0E23\u0E32\u0E22"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("button", {
     style: {
       background: "rgba(255,255,255,0.18)",
       color: "#fff",
       border: "1.5px solid rgba(255,255,255,0.5)",
       borderRadius: 20,
-      padding: "6px 14px",
-      fontSize: 12,
+      padding: "5px 12px",
+      fontSize: 11,
       fontWeight: 700,
       cursor: "pointer",
-      flexShrink: 0,
       whiteSpace: "nowrap"
     },
     onClick: onCheckBooking
-  }, "\uD83D\uDD0D \u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07")));
+  }, "\uD83D\uDD0D \u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E01\u0E32\u0E23\u0E08\u0E2D\u0E07"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("a", {
+    href: "tel:0832369410",
+    onClick: e => {
+      e.preventDefault();
+      window.location.href = "tel:0832369410";
+    },
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 4,
+      background: "rgba(255,255,255,0.15)",
+      color: "#fff",
+      borderRadius: 20,
+      padding: "4px 10px",
+      fontSize: 11,
+      fontWeight: 700,
+      textDecoration: "none",
+      flex: 1,
+      justifyContent: "center",
+      whiteSpace: "nowrap"
+    }
+  }, "\uD83D\uDCDE \u0E42\u0E17\u0E23"), /*#__PURE__*/React.createElement("a", {
+    href: "https://maps.app.goo.gl/naTBXcMhr4qpsmsw9",
+    target: "_blank",
+    rel: "noreferrer",
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 4,
+      background: "rgba(255,255,255,0.15)",
+      color: "#fff",
+      borderRadius: 20,
+      padding: "4px 10px",
+      fontSize: 11,
+      fontWeight: 700,
+      textDecoration: "none",
+      flex: 1,
+      justifyContent: "center",
+      whiteSpace: "nowrap"
+    }
+  }, "\uD83D\uDCCD \u0E41\u0E1C\u0E19\u0E17\u0E35\u0E48")))));
 }
 function SummaryRow({
   icon,
@@ -3306,13 +3535,11 @@ function generateBookingImage({
 const DEMO_PRICES = {
   general: {
     amount: 300,
-    isStarting: true,
-    note: "ราคาอาจแตกต่างตามการวินิจฉัย"
+    isStarting: true
   },
   wound: {
     amount: 300,
-    isStarting: true,
-    note: "ราคาขึ้นกับขนาดและความซับซ้อนของแผล"
+    isStarting: true
   },
   ekg: {
     amount: 300,
@@ -3443,6 +3670,10 @@ const DEMO_PRICES = {
     amount: 500,
     isStarting: false
   },
+  blood_thyroid: {
+    amount: 350,
+    isStarting: false
+  },
   vac_fluarix: {
     amount: 600,
     isStarting: false
@@ -3463,6 +3694,10 @@ const DEMO_PRICES = {
     amount: 800,
     isStarting: false
   },
+  vac_hep_a_ped: {
+    amount: 600,
+    isStarting: false
+  },
   vac_hpv: {
     amount: 3500,
     isStarting: false
@@ -3478,16 +3713,21 @@ const ADMIN_PIN = "kc88888888";
 const PRICE_CONFIG = [{
   key: "general",
   label: "ตรวจโรคทั่วไป",
-  sub: null
+  sub: null,
+  duration: "15-30 นาที",
+  condition: ""
 }, {
   key: "wound",
   label: "เย็บแผล / ตัดไหม / ทำแผล",
   sub: null,
-  note: "ราคาขึ้นกับขนาดและความซับซ้อนของแผล"
+  duration: "15-45 นาที",
+  condition: ""
 }, {
   key: "ekg",
   label: "ตรวจคลื่นไฟฟ้าหัวใจ",
-  sub: null
+  sub: null,
+  duration: "15-20 นาที",
+  condition: ""
 }, {
   key: "implant",
   label: "ถอดยาฝังคุมกำเนิด",
@@ -3499,19 +3739,27 @@ const PRICE_CONFIG = [{
 }, {
   key: "checkup_basic",
   label: "ตรวจสุขภาพประจำปี",
-  sub: "Basic Program"
+  sub: "Basic Program",
+  duration: "60-90 นาที",
+  condition: "งดน้ำ 8 ชั่วโมงก่อนตรวจ"
 }, {
   key: "checkup_std",
   label: "ตรวจสุขภาพประจำปี",
-  sub: "Standard Program"
+  sub: "Standard Program",
+  duration: "60-90 นาที",
+  condition: "งดน้ำ 8 ชั่วโมงก่อนตรวจ"
 }, {
   key: "checkup_prem",
   label: "ตรวจสุขภาพประจำปี",
-  sub: "Premium Program"
+  sub: "Premium Program",
+  duration: "90-120 นาที",
+  condition: "งดน้ำ 8 ชั่วโมงก่อนตรวจ"
 }, {
   key: "preemploy",
   label: "ตรวจก่อนเข้าทำงาน",
-  sub: null
+  sub: null,
+  duration: "30-60 นาที",
+  condition: "งดน้ำ 8 ชั่วโมงก่อนตรวจ (กรณีตรวจเลือด)"
 }, {
   key: "slimpen",
   label: "ปรึกษาปากกาลดน้ำหนัก",
@@ -3543,8 +3791,7 @@ const PRICE_CONFIG = [{
 }, {
   key: "blood",
   label: "ตรวจเลือด",
-  sub: null,
-  note: "ราคาขึ้นกับรายการที่เลือก"
+  sub: null
 }, {
   key: "vac_fluarix",
   label: "ฉีดวัคซีน",
@@ -3560,7 +3807,11 @@ const PRICE_CONFIG = [{
 }, {
   key: "vac_hep_a",
   label: "ฉีดวัคซีน",
-  sub: "ตับอักเสบเอ"
+  sub: "ตับอักเสบเอ โดสผู้ใหญ่ (18 ปีขึ้นไป)"
+}, {
+  key: "vac_hep_a_ped",
+  label: "ฉีดวัคซีน",
+  sub: "ตับอักเสบเอ โดสเด็ก (1-18 ปี)"
 }, {
   key: "vac_tt",
   label: "ฉีดวัคซีน",
@@ -3665,6 +3916,10 @@ const PRICE_CONFIG = [{
   key: "blood_std",
   label: "ตรวจเลือด",
   sub: "โรคติดต่อทางเพศสัมพันธ์"
+}, {
+  key: "blood_thyroid",
+  label: "ตรวจเลือด",
+  sub: "ฮอร์โมนไธรอยด์ (FT3, FT4, TSH)"
 }];
 
 // ดึง dateKey (yyyy-mm-dd) จาก booking object — ใช้ dateKey ถ้ามี ไม่งั้น parse จาก date
@@ -3754,36 +4009,77 @@ function PriceRow({
   onPricesChange
 }) {
   const entry = prices[item.key];
-  const amount = entry && typeof entry === "object" ? entry.amount : entry !== undefined && entry !== "" ? entry : "";
-  const isStarting = entry && typeof entry === "object" ? !!entry.isStarting : false;
-  const priceNote = entry && typeof entry === "object" ? entry.note || "" : "";
-  function updatePrice(newAmount, newIsStarting, newNote) {
+  const initAmount = entry && typeof entry === "object" ? String(entry.amount) : entry !== undefined && entry !== "" ? String(entry) : "";
+  const initIsStarting = entry && typeof entry === "object" ? !!entry.isStarting : false;
+  const initNote = entry && typeof entry === "object" ? entry.note || "" : "";
+  const initDuration = entry && typeof entry === "object" ? entry.duration || "" : item.duration || "";
+  const initCondition = entry && typeof entry === "object" ? entry.condition || "" : item.condition || "";
+  const [localAmount, setLocalAmount] = useState(initAmount);
+  const [localIsStarting, setLocalIsStarting] = useState(initIsStarting);
+  const [localNote, setLocalNote] = useState(initNote);
+  const [localDuration, setLocalDuration] = useState(initDuration);
+  const [localCondition, setLocalCondition] = useState(initCondition);
+  const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    const e2 = prices[item.key];
+    const a = e2 && typeof e2 === "object" ? String(e2.amount) : e2 !== undefined && e2 !== "" ? String(e2) : "";
+    const s = e2 && typeof e2 === "object" ? !!e2.isStarting : false;
+    const n = e2 && typeof e2 === "object" ? e2.note || "" : "";
+    const d = e2 && typeof e2 === "object" ? e2.duration || "" : item.duration || "";
+    const c = e2 && typeof e2 === "object" ? e2.condition || "" : item.condition || "";
+    setLocalAmount(a);
+    setLocalIsStarting(s);
+    setLocalNote(n);
+    setLocalDuration(d);
+    setLocalCondition(c);
+    setDirty(false);
+  }, [JSON.stringify(prices[item.key])]);
+  function handleSave() {
     const np = {
       ...prices
     };
-    const nt = newNote !== undefined ? newNote : priceNote;
-    if (newAmount === "" || newAmount === undefined) {
+    if (localAmount === "" && !localDuration && !localCondition && !localNote) {
       delete np[item.key];
     } else {
-      const hasExtra = newIsStarting || nt;
-      np[item.key] = hasExtra ? {
-        amount: Number(newAmount),
-        isStarting: !!newIsStarting,
-        ...(nt ? {
-          note: nt
+      const prev = np[item.key] && typeof np[item.key] === "object" ? np[item.key] : {};
+      np[item.key] = {
+        ...prev,
+        ...(localAmount !== "" ? {
+          amount: Number(localAmount),
+          isStarting: !!localIsStarting
+        } : {}),
+        ...(localNote ? {
+          note: localNote
+        } : {}),
+        ...(localDuration ? {
+          duration: localDuration
+        } : {}),
+        ...(localCondition ? {
+          condition: localCondition
         } : {})
-      } : Number(newAmount);
+      };
+      if (!localAmount) delete np[item.key].amount;
+      if (!localNote) delete np[item.key].note;
+      if (!localDuration) delete np[item.key].duration;
+      if (!localCondition) delete np[item.key].condition;
+      if (Object.keys(np[item.key]).length === 0) delete np[item.key];
     }
     setPrices(np);
     savePrices(np);
     if (onPricesChange) onPricesChange(np);
+    setDirty(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#fff",
       borderRadius: 12,
       padding: "12px 14px",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.06)"
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      border: dirty ? "1.5px solid #f97316" : "1.5px solid transparent",
+      transition: "border 0.2s"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3795,18 +4091,24 @@ function PriceRow({
     style: {
       flex: 1
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, item.sub ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       fontWeight: 700,
       color: "#1e293b"
     }
-  }, item.label), item.sub && /*#__PURE__*/React.createElement("div", {
+  }, item.sub), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#94a3b8"
     }
-  }, item.sub)), /*#__PURE__*/React.createElement("div", {
+  }, item.label)) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#1e293b"
+    }
+  }, item.label)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -3817,7 +4119,7 @@ function PriceRow({
     type: "number",
     min: "0",
     placeholder: "\u0E23\u0E32\u0E04\u0E32",
-    value: String(amount),
+    value: localAmount,
     style: {
       width: 90,
       border: "2px solid #e2e8f0",
@@ -3828,13 +4130,17 @@ function PriceRow({
       outline: "none",
       fontFamily: "inherit"
     },
-    onChange: e => updatePrice(e.target.value, isStarting)
+    onChange: e => {
+      setLocalAmount(e.target.value);
+      setDirty(true);
+      setSaved(false);
+    }
   }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
       color: "#94a3b8"
     }
-  }, "\u0E1A\u0E32\u0E17"))), amount !== "" && amount !== undefined && /*#__PURE__*/React.createElement("label", {
+  }, "\u0E1A\u0E32\u0E17"))), localAmount !== "" && /*#__PURE__*/React.createElement("label", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -3842,26 +4148,30 @@ function PriceRow({
       marginTop: 8,
       cursor: "pointer",
       fontSize: 12,
-      color: isStarting ? "#0369a1" : "#94a3b8",
+      color: localIsStarting ? "#0369a1" : "#94a3b8",
       userSelect: "none"
     }
   }, /*#__PURE__*/React.createElement("input", {
     type: "checkbox",
-    checked: isStarting,
+    checked: localIsStarting,
     style: {
       width: 14,
       height: 14,
       cursor: "pointer",
       accentColor: "#0369a1"
     },
-    onChange: e => updatePrice(amount, e.target.checked)
-  }), isStarting ? `✅ แสดงเป็น "เริ่มต้นที่ ${amount ? Number(amount).toLocaleString() : ""} บาท"` : `ติ๊กเพื่อแสดงเป็น "เริ่มต้นที่ ${amount ? Number(amount).toLocaleString() : ""} บาท"`), amount !== "" && amount !== undefined && /*#__PURE__*/React.createElement("div", {
+    onChange: e => {
+      setLocalIsStarting(e.target.checked);
+      setDirty(true);
+      setSaved(false);
+    }
+  }), localIsStarting ? `✅ แสดงเป็น "เริ่มต้นที่ ${localAmount ? Number(localAmount).toLocaleString() : ""} บาท"` : `ติ๊กเพื่อแสดงเป็น "เริ่มต้นที่ ${localAmount ? Number(localAmount).toLocaleString() : ""} บาท"`), localAmount !== "" && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 8
     }
   }, /*#__PURE__*/React.createElement("input", {
     placeholder: item.note || "หมายเหตุสำหรับผู้ป่วย (ไม่บังคับ)",
-    value: priceNote,
+    value: localNote,
     style: {
       width: "100%",
       boxSizing: "border-box",
@@ -3873,8 +4183,12 @@ function PriceRow({
       fontFamily: "inherit",
       color: "#475569"
     },
-    onChange: e => updatePrice(amount, isStarting, e.target.value)
-  })), !priceNote && item.note && /*#__PURE__*/React.createElement("div", {
+    onChange: e => {
+      setLocalNote(e.target.value);
+      setDirty(true);
+      setSaved(false);
+    }
+  })), !localNote && item.note && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#f97316",
@@ -3883,7 +4197,91 @@ function PriceRow({
       background: "#fff7ed",
       borderRadius: 6
     }
-  }, "\uD83D\uDCA1 ", item.note));
+  }, "\uD83D\uDCA1 ", item.note), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#94a3b8",
+      flexShrink: 0
+    }
+  }, "\u23F1\uFE0F \u0E40\u0E27\u0E25\u0E32:"), /*#__PURE__*/React.createElement("input", {
+    placeholder: "\u0E40\u0E0A\u0E48\u0E19 15-30 \u0E19\u0E32\u0E17\u0E35",
+    value: localDuration,
+    style: {
+      flex: 1,
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      padding: "5px 10px",
+      fontSize: 12,
+      outline: "none",
+      fontFamily: "inherit",
+      color: "#475569"
+    },
+    onChange: e => {
+      setLocalDuration(e.target.value);
+      setDirty(true);
+      setSaved(false);
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 6,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#94a3b8",
+      flexShrink: 0
+    }
+  }, "\uD83D\uDCCB \u0E40\u0E07\u0E37\u0E48\u0E2D\u0E19\u0E44\u0E02:"), /*#__PURE__*/React.createElement("input", {
+    placeholder: "\u0E40\u0E0A\u0E48\u0E19 \u0E07\u0E14\u0E19\u0E49\u0E33 8 \u0E0A\u0E31\u0E48\u0E27\u0E42\u0E21\u0E07\u0E01\u0E48\u0E2D\u0E19\u0E15\u0E23\u0E27\u0E08",
+    value: localCondition,
+    style: {
+      flex: 1,
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      padding: "5px 10px",
+      fontSize: 12,
+      outline: "none",
+      fontFamily: "inherit",
+      color: "#475569"
+    },
+    onChange: e => {
+      setLocalCondition(e.target.value);
+      setDirty(true);
+      setSaved(false);
+    }
+  })), dirty && /*#__PURE__*/React.createElement("button", {
+    onClick: handleSave,
+    style: {
+      marginTop: 10,
+      width: "100%",
+      background: "#0ea5e9",
+      color: "#fff",
+      border: "none",
+      borderRadius: 8,
+      padding: "8px",
+      fontSize: 13,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "\uD83D\uDCBE \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01"), saved && !dirty && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8,
+      fontSize: 12,
+      color: "#16a34a",
+      textAlign: "center",
+      fontWeight: 600
+    }
+  }, "\u2705 \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27"));
 }
 function AdminPanel({
   onExit,
@@ -3921,7 +4319,17 @@ function AdminPanel({
   const [calViewMonth, setCalViewMonth] = useState(new Date().getMonth());
   const [calViewDate, setCalViewDate] = useState(null);
   const [prices, setPrices] = useState({}); // { "service_key": price_number }
-  const [priceLoaded, setPriceLoaded] = useState(false); // วันที่เลือกใน calendar view
+  const [priceLoaded, setPriceLoaded] = useState(false);
+  const [adminTotalPatients, setAdminTotalPatients] = useState("");
+  const [patientDirty, setPatientDirty] = useState(false);
+  const [patientSaved, setPatientSaved] = useState(false);
+  const [adminNews, setAdminNews] = useState([]); // [{title,body,type,date}]
+  const [newsDraft, setNewsDraft] = useState({
+    title: "",
+    body: "",
+    type: "info"
+  });
+  const [newsSaving, setNewsSaving] = useState(false); // วันที่เลือกใน calendar view
 
   const SHEET_URL = "https://script.google.com/macros/s/AKfycbwM1ewmQgBjwOwA-eBG6XMr5fFzwgonMPZPc-nohggit-L9tkOHpjhdkw9CoUyfIBa2/exec";
   function loadHolidaysForYear(year) {
@@ -3944,6 +4352,18 @@ function AdminPanel({
       setPinError(false);
       fetchBookings();
       loadPrices();
+      fetch(SHEET_URL + "?action=getTotalPatients").then(r => r.json()).then(d => {
+        if (d.success) setAdminTotalPatients(String(d.total || 0));
+      }).catch(() => {});
+      fetch(SHEET_URL + "?action=getNews").then(r => r.json()).then(d => {
+        if (d.success) setAdminNews(d.news || []);
+      }).catch(() => {});
+      fetch(SHEET_URL + "?action=getEquipStatus").then(r => r.json()).then(d => {
+        if (d.success) setAdminEquip(d.status || {
+          ekg: "ready",
+          us: "ready"
+        });
+      }).catch(() => {});
     } else {
       setPinError(true);
       setPin("");
@@ -4155,7 +4575,7 @@ function AdminPanel({
     onClick: onExit
   }, "\u2190 \u0E2B\u0E19\u0E49\u0E32\u0E08\u0E2D\u0E07")), /*#__PURE__*/React.createElement("div", {
     style: as.tabs
-  }, [["bookings", "📋 ใกล้ถึงคิวนัด"], ["calendar", "📅 ปฏิทินนัด"], ["price", "💰 ราคาบริการ"], ["schedule", "⚙️ ตารางเปิด-ปิด"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["bookings", "📋 ใกล้ถึงคิวนัด"], ["calendar", "📅 ปฏิทินนัด"], ["price", "⚙️ จัดการบริการ"], ["news", "📢 ข่าวสาร"], ["schedule", "⚙️ ตารางเปิด-ปิด"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     style: {
       ...as.tab,
@@ -4698,7 +5118,215 @@ function AdminPanel({
       color: "#64748b",
       marginBottom: 16
     }
-  }, "\u0E01\u0E33\u0E2B\u0E19\u0E14\u0E23\u0E32\u0E04\u0E32\u0E41\u0E15\u0E48\u0E25\u0E30\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23 \u2014 \u0E41\u0E2A\u0E14\u0E07\u0E43\u0E2B\u0E49\u0E1C\u0E39\u0E49\u0E1B\u0E48\u0E27\u0E22\u0E40\u0E2B\u0E47\u0E19\u0E01\u0E48\u0E2D\u0E19\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E19\u0E31\u0E14"), !priceLoaded ? /*#__PURE__*/React.createElement("div", {
+  }, "\u0E01\u0E33\u0E2B\u0E19\u0E14\u0E23\u0E32\u0E04\u0E32\u0E41\u0E15\u0E48\u0E25\u0E30\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23 \u2014 \u0E41\u0E2A\u0E14\u0E07\u0E43\u0E2B\u0E49\u0E1C\u0E39\u0E49\u0E1B\u0E48\u0E27\u0E22\u0E40\u0E2B\u0E47\u0E19\u0E01\u0E48\u0E2D\u0E19\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E19\u0E31\u0E14"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 12,
+      padding: "12px 14px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#1e293b",
+      marginBottom: 10
+    }
+  }, "\uD83D\uDD27 \u0E2A\u0E16\u0E32\u0E19\u0E30\u0E2D\u0E38\u0E1B\u0E01\u0E23\u0E13\u0E4C"), [{
+    key: "ekg",
+    label: "🫀 เครื่อง EKG"
+  }, {
+    key: "us",
+    label: "🖥️ เครื่องอัลตร้าซาวด์"
+  }].map(eq => /*#__PURE__*/React.createElement("div", {
+    key: eq.key,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 8,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#374151",
+      minWidth: 140
+    }
+  }, eq.label), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      flex: 1
+    }
+  }, [{
+    v: "ready",
+    label: "✅ พร้อม"
+  }, {
+    v: "unavailable",
+    label: "🔴 งดชั่วคราว"
+  }].map(opt => /*#__PURE__*/React.createElement("button", {
+    key: opt.v,
+    style: {
+      flex: 1,
+      padding: "6px 8px",
+      borderRadius: 8,
+      border: adminEquip[eq.key] === opt.v ? "2px solid #0ea5e9" : "1.5px solid #e2e8f0",
+      background: adminEquip[eq.key] === opt.v ? "#e0f2fe" : "#fff",
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: "pointer"
+    },
+    onClick: async () => {
+      const updated = {
+        ...adminEquip,
+        [eq.key]: opt.v
+      };
+      setAdminEquip(updated);
+      try {
+        await fetch(SHEET_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "saveEquipStatus",
+            status: updated
+          })
+        });
+      } catch (e) {}
+    }
+  }, opt.label))), adminEquip[eq.key] === "unavailable" && /*#__PURE__*/React.createElement("input", {
+    placeholder: "\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25 (\u0E44\u0E21\u0E48\u0E1A\u0E31\u0E07\u0E04\u0E31\u0E1A)",
+    defaultValue: adminEquip[eq.key + "_note"] || "",
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      marginTop: 4,
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      padding: "5px 10px",
+      fontSize: 12,
+      outline: "none",
+      fontFamily: "inherit"
+    },
+    onBlur: async e => {
+      const updated = {
+        ...adminEquip,
+        [eq.key + "_note"]: e.target.value
+      };
+      setAdminEquip(updated);
+      try {
+        await fetch(SHEET_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "saveEquipStatus",
+            status: updated
+          })
+        });
+      } catch (err) {}
+    }
+  })))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 12,
+      padding: "12px 14px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      marginBottom: 16,
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#1e293b"
+    }
+  }, "\u0E1C\u0E39\u0E49\u0E23\u0E31\u0E1A\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23\u0E2A\u0E30\u0E2A\u0E21"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#94a3b8"
+    }
+  }, "\u0E41\u0E2A\u0E14\u0E07\u0E43\u0E15\u0E49\u0E0A\u0E37\u0E48\u0E2D\u0E04\u0E25\u0E34\u0E19\u0E34\u0E01\u0E43\u0E19\u0E2B\u0E19\u0E49\u0E32\u0E41\u0E23\u0E01")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: "0",
+    placeholder: "0",
+    value: adminTotalPatients,
+    style: {
+      width: 100,
+      border: "2px solid #e2e8f0",
+      borderRadius: 8,
+      padding: "6px 10px",
+      fontSize: 14,
+      textAlign: "right",
+      outline: "none",
+      fontFamily: "inherit"
+    },
+    onChange: e => {
+      setAdminTotalPatients(e.target.value);
+      setPatientDirty(true);
+      setPatientSaved(false);
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#94a3b8"
+    }
+  }, "\u0E23\u0E32\u0E22")), patientDirty && /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
+      try {
+        await fetch(SHEET_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "saveTotalPatients",
+            total: Number(adminTotalPatients)
+          })
+        });
+        setPatientDirty(false);
+        setPatientSaved(true);
+        setTimeout(() => setPatientSaved(false), 2000);
+      } catch (e) {
+        console.warn(e);
+      }
+    },
+    style: {
+      background: "#0ea5e9",
+      color: "#fff",
+      border: "none",
+      borderRadius: 8,
+      padding: "7px 14px",
+      fontSize: 13,
+      fontWeight: 700,
+      cursor: "pointer",
+      flexShrink: 0
+    }
+  }, "\uD83D\uDCBE"), patientSaved && !patientDirty && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#16a34a",
+      fontWeight: 600
+    }
+  }, "\u2705")), !priceLoaded ? /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: 32,
@@ -4708,19 +5336,289 @@ function AdminPanel({
     style: {
       display: "flex",
       flexDirection: "column",
-      gap: 10
+      gap: 20
     }
-  }, PRICE_CONFIG.map(item => {
-    const val = prices[item.key] !== undefined ? String(prices[item.key]) : "";
-    return /*#__PURE__*/React.createElement(PriceRow, {
-      key: item.key,
-      item: item,
-      prices: prices,
-      setPrices: setPrices,
-      savePrices: savePrices,
-      onPricesChange: onPricesChange
-    });
-  }))), activeTab === "schedule" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, [{
+    group: "🩺 บริการทั่วไป",
+    keys: ["general", "wound", "ekg", "implant", "preemploy", "slimpen"]
+  }, {
+    group: "📋 ตรวจสุขภาพประจำปี",
+    keys: ["checkup_basic", "checkup_std", "checkup_prem"]
+  }, {
+    group: "📄 ใบรับรองแพทย์",
+    keys: ["cert_drive", "cert_job", "cert_other"]
+  }, {
+    group: "🧪 ผลตรวจเพิ่มเติม",
+    keys: ["extra_pregnancy", "extra_hepb", "extra_antihbs", "extra_drug", "extra_ecg"]
+  }, {
+    group: "🖥️ อัลตร้าซาวด์",
+    keys: ["us_whole", "us_upper", "us_lower", "us_ob", "us_small"]
+  }, {
+    group: "💊 ยาคุมกำเนิด",
+    keys: ["contra_dmpa1", "contra_dmpa3", "contra_implanon"]
+  }, {
+    group: "🔬 ตรวจเลือด",
+    keys: ["blood_abo", "blood_cbc", "blood_fbs", "blood_lipid", "blood_liver", "blood_renal", "blood_uric", "blood_hba1c", "blood_std", "blood_thyroid"]
+  }, {
+    group: "💉 วัคซีน",
+    keys: ["vac_fluarix", "vac_influ3", "vac_hep_b", "vac_hep_a", "vac_hep_a_ped", "vac_tt", "vac_rabies", "vac_hpv", "vac_varicella"]
+  }].map(section => /*#__PURE__*/React.createElement("div", {
+    key: section.group
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: "#0369a1",
+      marginBottom: 8,
+      padding: "6px 12px",
+      background: "linear-gradient(90deg,#e0f2fe,transparent)",
+      borderRadius: 8,
+      borderLeft: "3px solid #0ea5e9"
+    }
+  }, section.group), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }
+  }, PRICE_CONFIG.filter(item => section.keys.includes(item.key)).map(item => /*#__PURE__*/React.createElement(PriceRow, {
+    key: item.key,
+    item: item,
+    prices: prices,
+    setPrices: setPrices,
+    savePrices: savePrices,
+    onPricesChange: onPricesChange
+  }))))))), activeTab === "news" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#64748b",
+      marginBottom: 16
+    }
+  }, "\u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23\u0E08\u0E30\u0E41\u0E2A\u0E14\u0E07\u0E43\u0E19\u0E2B\u0E19\u0E49\u0E32\u0E41\u0E23\u0E01\u0E01\u0E48\u0E2D\u0E19\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      borderRadius: 12,
+      padding: "14px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#0369a1",
+      marginBottom: 10
+    }
+  }, "\u2795 \u0E40\u0E1E\u0E34\u0E48\u0E21\u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23\u0E43\u0E2B\u0E21\u0E48"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: "#64748b",
+      display: "block",
+      marginBottom: 4
+    }
+  }, "\u0E1B\u0E23\u0E30\u0E40\u0E20\u0E17"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, [{
+    id: "info",
+    label: "📢 ประกาศ"
+  }, {
+    id: "success",
+    label: "✅ ข่าวดี"
+  }, {
+    id: "urgent",
+    label: "⚠️ ด่วน"
+  }].map(t => /*#__PURE__*/React.createElement("button", {
+    key: t.id,
+    onClick: () => setNewsDraft(d => ({
+      ...d,
+      type: t.id
+    })),
+    style: {
+      flex: 1,
+      padding: "6px",
+      borderRadius: 8,
+      border: newsDraft.type === t.id ? "2px solid #0ea5e9" : "1.5px solid #e2e8f0",
+      background: newsDraft.type === t.id ? "#e0f2fe" : "#fff",
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: "pointer"
+    }
+  }, t.label)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    placeholder: "\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D (\u0E44\u0E21\u0E48\u0E1A\u0E31\u0E07\u0E04\u0E31\u0E1A)",
+    value: newsDraft.title,
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      padding: "7px 10px",
+      fontSize: 13,
+      outline: "none",
+      fontFamily: "inherit"
+    },
+    onChange: e => setNewsDraft(d => ({
+      ...d,
+      title: e.target.value
+    }))
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("textarea", {
+    placeholder: "\u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23 *",
+    value: newsDraft.body,
+    rows: 3,
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      padding: "7px 10px",
+      fontSize: 13,
+      outline: "none",
+      fontFamily: "inherit",
+      resize: "vertical"
+    },
+    onChange: e => setNewsDraft(d => ({
+      ...d,
+      body: e.target.value
+    }))
+  })), /*#__PURE__*/React.createElement("button", {
+    disabled: !newsDraft.body.trim() || newsSaving,
+    style: {
+      width: "100%",
+      background: newsDraft.body.trim() ? "#0ea5e9" : "#e2e8f0",
+      color: newsDraft.body.trim() ? "#fff" : "#94a3b8",
+      border: "none",
+      borderRadius: 8,
+      padding: "10px",
+      fontSize: 13,
+      fontWeight: 700,
+      cursor: newsDraft.body.trim() ? "pointer" : "default"
+    },
+    onClick: async () => {
+      setNewsSaving(true);
+      const now = new Date();
+      const thDate = `${now.getDate()} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][now.getMonth()]} ${now.getFullYear() + 543}`;
+      const newItem = {
+        ...newsDraft,
+        date: thDate
+      };
+      const updated = [newItem, ...adminNews];
+      try {
+        await fetch(SHEET_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "saveNews",
+            news: updated
+          })
+        });
+        setAdminNews(updated);
+        setNewsDraft({
+          title: "",
+          body: "",
+          type: "info"
+        });
+      } catch (e) {
+        console.warn(e);
+      }
+      setNewsSaving(false);
+    }
+  }, newsSaving ? "กำลังบันทึก..." : "💾 เพิ่มข่าวสาร")), adminNews.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: 24,
+      color: "#94a3b8",
+      fontSize: 13
+    }
+  }, "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E48\u0E32\u0E27\u0E2A\u0E32\u0E23") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }
+  }, adminNews.map((item, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      background: "#fff",
+      borderRadius: 12,
+      padding: "12px 14px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      borderLeft: `4px solid ${item.type === "urgent" ? "#ef4444" : item.type === "success" ? "#22c55e" : "#3b82f6"}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, item.title && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "#1e293b",
+      marginBottom: 2
+    }
+  }, item.title), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "#475569"
+    }
+  }, item.body), item.date && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "#94a3b8",
+      marginTop: 4
+    }
+  }, item.date)), /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
+      const updated = adminNews.filter((_, j) => j !== i);
+      try {
+        await fetch(SHEET_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "saveNews",
+            news: updated
+          })
+        });
+        setAdminNews(updated);
+      } catch (e) {
+        console.warn(e);
+      }
+    },
+    style: {
+      background: "#fef2f2",
+      color: "#ef4444",
+      border: "none",
+      borderRadius: 8,
+      padding: "4px 10px",
+      fontSize: 12,
+      cursor: "pointer",
+      flexShrink: 0
+    }
+  }, "\u2715 \u0E25\u0E1A")))))), activeTab === "schedule" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -5967,6 +6865,9 @@ function App() {
   const [daysOpenRoot, setDaysOpenRoot] = useState(DAYS_OPEN_DEFAULT);
   const [scheduleLoaded, setScheduleLoaded] = useState(false);
   const [pricesRoot, setPricesRoot] = useState({});
+  const [totalPatients, setTotalPatients] = useState(null);
+  const [newsItems, setNewsItems] = useState([]);
+  const [equipStatus, setEquipStatus] = useState({}); // { ekg: "ready"|"unavailable", us: "ready"|"unavailable" }
 
   // โหลด schedule จาก server ตอนเริ่มต้น
   useEffect(() => {
@@ -5990,12 +6891,26 @@ function App() {
       if (data.success && data.prices && Object.keys(data.prices).length > 0) {
         setPricesRoot(data.prices);
       } else {
-        // ยังไม่ได้กำหนดราคา → ใช้ราคาตัวอย่าง (แสดงเป็น "เริ่มต้นที่")
         setPricesRoot(DEMO_PRICES);
       }
     }).catch(() => {
       setPricesRoot(DEMO_PRICES);
     });
+
+    // โหลดจำนวนผู้รับบริการสะสม
+    fetch(SCRIPT_URL + "?action=getTotalPatients").then(r => r.json()).then(data => {
+      if (data.success) setTotalPatients(data.total || 1011);
+    }).catch(() => {
+      setTotalPatients(1011);
+    });
+
+    // โหลดข่าวสารคลินิก
+    fetch(SCRIPT_URL + "?action=getNews").then(r => r.json()).then(data => {
+      if (data.success) setNewsItems(data.news || []);
+    }).catch(() => {});
+    fetch(SCRIPT_URL + "?action=getEquipStatus").then(r => r.json()).then(data => {
+      if (data.success) setEquipStatus(data.status || {});
+    }).catch(() => {});
   }, []);
   if (mode === "admin") return /*#__PURE__*/React.createElement(AdminPanel, {
     onExit: () => setMode("patient"),
@@ -6018,6 +6933,9 @@ function App() {
     openDates: openDates,
     daysOpen: daysOpenRoot,
     prices: pricesRoot,
+    totalPatients: totalPatients,
+    newsItems: newsItems,
+    equipStatus: equipStatus,
     onCheckBooking: () => setMode("mybookings"),
     onAdminLogin: () => setMode("admin")
   }));
