@@ -4323,14 +4323,17 @@ function AdminPanel({
   const [adminTotalPatients, setAdminTotalPatients] = useState("");
   const [patientDirty, setPatientDirty] = useState(false);
   const [patientSaved, setPatientSaved] = useState(false);
-  const [adminNews, setAdminNews] = useState([]); // [{title,body,type,date}]
+  const [adminNews, setAdminNews] = useState([]);
   const [newsDraft, setNewsDraft] = useState({
     title: "",
     body: "",
     type: "info"
   });
-  const [newsSaving, setNewsSaving] = useState(false); // วันที่เลือกใน calendar view
-
+  const [newsSaving, setNewsSaving] = useState(false);
+  const [adminEquip, setAdminEquip] = useState({
+    ekg: "ready",
+    us: "ready"
+  });
   const SHEET_URL = "https://script.google.com/macros/s/AKfycbwM1ewmQgBjwOwA-eBG6XMr5fFzwgonMPZPc-nohggit-L9tkOHpjhdkw9CoUyfIBa2/exec";
   function loadHolidaysForYear(year) {
     if (loadedYears.has(year)) return;
