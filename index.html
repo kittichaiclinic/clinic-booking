@@ -590,6 +590,7 @@ function ClinicBooking({
       amount: pe,
       isStarting: false
     };
+    if (pp.amount === undefined || pp.amount === null || pp.amount === "" || isNaN(Number(pp.amount))) return null;
     return /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 11,
@@ -1556,7 +1557,7 @@ function ClinicBooking({
           amount: pe,
           isStarting: false
         });
-        if (pp) return /*#__PURE__*/React.createElement("span", {
+        if (pp && pp.amount && !isNaN(Number(pp.amount))) return /*#__PURE__*/React.createElement("span", {
           style: {
             fontSize: 16,
             fontWeight: 800,
@@ -1963,6 +1964,7 @@ function ClinicBooking({
           amount: pe,
           isStarting: false
         };
+        if (!pp.amount || isNaN(Number(pp.amount))) return null;
         return /*#__PURE__*/React.createElement("div", {
           style: {
             fontSize: 12,
@@ -2993,6 +2995,7 @@ function PreEmployExtras({
       amount: pe,
       isStarting: false
     };
+    if (!pp.amount || isNaN(Number(pp.amount))) return null;
     return React.createElement('span', {
       style: {
         fontSize: 11,
