@@ -774,13 +774,19 @@ function ClinicBooking({
   // helper — แปลง price entry เป็น { amount, isStarting, note }
   function parsePrice(entry) {
     if (entry === undefined || entry === null || entry === "") return null;
-    if (typeof entry === "object") return {
-      amount: Number(entry.amount),
-      isStarting: !!entry.isStarting,
-      note: entry.note || ""
-    };
+    if (typeof entry === "object") {
+      const a = Number(entry.amount);
+      if (isNaN(a) || entry.amount === "" || entry.amount === undefined) return null;
+      return {
+        amount: a,
+        isStarting: !!entry.isStarting,
+        note: entry.note || ""
+      };
+    }
+    const a = Number(entry);
+    if (isNaN(a)) return null;
     return {
-      amount: Number(entry),
+      amount: a,
       isStarting: false,
       note: ""
     };
