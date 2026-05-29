@@ -1546,13 +1546,24 @@ function ClinicBooking({
           fontSize: 11,
           fontWeight: 700
         }
-      }, "\u2713"), /*#__PURE__*/React.createElement("span", {
+      }, "\u2713"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: 14,
           fontWeight: 700,
           color: pSel ? prog.color : "#1e293b"
         }
-      }, prog.label)), /*#__PURE__*/React.createElement("div", {
+      }, prog.label), (() => {
+        const pe2 = prog.priceKey && prices[prog.priceKey];
+        const dur = pe2 && typeof pe2 === "object" ? pe2.duration : "";
+        if (!dur) return null;
+        return /*#__PURE__*/React.createElement("div", {
+          style: {
+            fontSize: 10,
+            color: "#94a3b8",
+            marginTop: 1
+          }
+        }, "\u23F1\uFE0F ", dur);
+      })())), /*#__PURE__*/React.createElement("div", {
         style: {
           textAlign: "right"
         }
