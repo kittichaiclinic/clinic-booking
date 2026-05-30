@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kittichaiclinic.github.io/clinic-booking/sitemap.xml
