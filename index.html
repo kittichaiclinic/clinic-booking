@@ -449,25 +449,27 @@ const TIME_SLOTS_WEEKDAY = ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30"
 const TIME_SLOTS_WEEKEND = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30"];
 const THAI_HOLIDAYS_2026 = {
   "2026-01-01": "วันขึ้นปีใหม่",
-  "2026-02-05": "วันมาฆบูชา",
+  "2026-01-02": "วันหยุดพิเศษ (ครม.)",
+  "2026-03-03": "วันมาฆบูชา",
   "2026-04-06": "วันจักรี",
   "2026-04-13": "วันสงกรานต์",
   "2026-04-14": "วันสงกรานต์",
   "2026-04-15": "วันสงกรานต์",
   "2026-05-01": "วันแรงงานแห่งชาติ",
   "2026-05-04": "วันฉัตรมงคล",
-  "2026-05-05": "วันฉัตรมงคล (ชดเชย)",
-  "2026-05-11": "วันวิสาขบูชา",
+  "2026-05-09": "วันพืชมงคล",
+  "2026-05-31": "วันวิสาขบูชา",
   "2026-06-01": "วันหยุดชดเชยวิสาขบูชา",
   "2026-06-03": "วันเฉลิมพระชนมพรรษาสมเด็จพระราชินี",
-  "2026-07-08": "วันอาสาฬหบูชา",
-  "2026-07-09": "วันเข้าพรรษา",
   "2026-07-28": "วันเฉลิมพระชนมพรรษา ร.10",
+  "2026-07-29": "วันอาสาฬหบูชา",
+  "2026-07-30": "วันเข้าพรรษา",
   "2026-08-12": "วันแม่แห่งชาติ",
   "2026-10-13": "วันคล้ายวันสวรรคต ร.9",
   "2026-10-23": "วันปิยมหาราช",
+  "2026-10-26": "วันออกพรรษา",
   "2026-12-05": "วันพ่อแห่งชาติ",
-  "2026-12-07": "วันพ่อแห่งชาติ (ชดเชย)",
+  "2026-12-07": "วันหยุดชดเชยวันพ่อแห่งชาติ",
   "2026-12-10": "วันรัฐธรรมนูญ",
   "2026-12-31": "วันสิ้นปี"
 };
@@ -5660,7 +5662,14 @@ function AdminPanel({
       cursor: "pointer",
       flexShrink: 0
     }
-  }, "\u2715 \u0E25\u0E1A")))))), activeTab === "schedule" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "\u2715 \u0E25\u0E1A")))))), activeTab === "schedule" && /*#__PURE__*/React.createElement("div", null,
+  /*#__PURE__*/React.createElement("div", {style:{display:"flex",justifyContent:"flex-end",marginBottom:12}},
+    /*#__PURE__*/React.createElement("button", {
+      style:{background:"#0ea5e9",color:"#fff",border:"none",borderRadius:10,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"},
+      onClick: () => window.printCalendar && window.printCalendar(closedDates, openDates, daysOpen)
+    }, "🖨️ พิมพ์ปฏิทิน A4")
+  ),
+  /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -7661,6 +7670,106 @@ const as = {
   }
 };
 ;(function(){var root=ReactDOM.createRoot(document.getElementById('root'));root.render(React.createElement(App));document.getElementById('loading').style.display='none';})();
+</script>
+
+<script>
+window.printCalendar = function(closedDates, openDates, daysOpen) {
+  var today = new Date();
+  var MONTHS_TH = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  var DEFAULT_TIMES = {0:"09:00–16:00",1:"17:00–21:00",2:"17:00–21:00",3:"17:00–21:00",4:"17:00–21:00",5:"ปิด",6:"09:00–16:00"};
+  function padZ(n){return String(n).padStart(2,"0");}
+  function getDays(y,m){return new Date(y,m+1,0).getDate();}
+  function getFirst(y,m){return new Date(y,m,1).getDay();}
+
+  var opts="";
+  for(var i=-2;i<=9;i++){
+    var oy=today.getFullYear(),om=today.getMonth()+i;
+    while(om<0){om+=12;oy--;}while(om>11){om-=12;oy++;}
+    var val=oy+"-"+padZ(om+1);
+    opts+="<option value='"+val+"'"+(i===0?" selected":"")+">"+MONTHS_TH[om]+" "+(oy+543)+"</option>";
+  }
+
+  var win=window.open("","_blank","width=1050,height=750");
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ปฏิทินคลินิก</title><style>'+
+    '@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}'+
+    'body{font-family:Sarabun,"Noto Sans Thai",sans-serif;font-size:13px;margin:0;padding:10px;background:#fff}'+
+    '.no-print{display:flex;justify-content:center;gap:12px;margin-bottom:12px;align-items:center}'+
+    '.no-print select{font-family:inherit;font-size:14px;padding:6px 12px;border:1.5px solid #0ea5e9;border-radius:8px;background:#f0f9ff;color:#0369a1;font-weight:600}'+
+    '.no-print button{font-family:inherit;font-size:14px;padding:7px 20px;border:none;border-radius:8px;background:#0ea5e9;color:#fff;font-weight:700;cursor:pointer}'+
+    'h1{text-align:center;font-size:22px;color:#0369a1;margin:0 0 2px;font-weight:800}'+
+    '.month-title{text-align:center;font-size:17px;font-weight:700;color:#0369a1;margin:0 0 8px}'+
+    'table{width:100%;border-collapse:collapse;table-layout:fixed}'+
+    'th{text-align:center;padding:6px 2px;background:#e0f2fe;font-size:12px;color:#0369a1;border:1px solid #bae6fd;font-weight:700}'+
+    'th.sun-h{color:#ef4444}'+
+    'td{border:1px solid #e2e8f0;vertical-align:top;height:72px;padding:4px;position:relative}'+
+    '.day-num{font-weight:700;font-size:16px;color:#1e293b}'+
+    '.day-num.sun{color:#ef4444}.day-num.today{color:#0ea5e9}'+
+    '.day-time{font-size:10px;color:#475569;margin-top:3px}'+
+    '.dot{width:8px;height:8px;border-radius:50%;position:absolute;top:4px;right:4px}'+
+    '.dot.red{background:#ef4444}.dot.yellow{background:#eab308}.dot.orange{background:#f97316}.dot.purple{background:#7c3aed}'+
+    '.legend{display:flex;gap:16px;justify-content:center;margin:10px 0 4px;flex-wrap:wrap}'+
+    '.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#475569}'+
+    '.legend-dot{width:10px;height:10px;border-radius:50%}'+
+    '.footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:8px}'+
+    '@media print{.no-print{display:none!important}body{padding:0}}'+
+    '</style></head><body>'+
+    '<div class="no-print"><select id="mp" onchange="rc()">'+opts+'</select>'+
+    '<button onclick="window.print()">🖨️ พิมพ์</button></div>'+
+    '<h1 id="ct">คลินิกแพทย์กิตติชัย</h1>'+
+    '<div class="month-title" id="cm"></div>'+
+    '<div id="cb"></div>'+
+    '<div class="legend">'+
+    '<div class="legend-item"><div class="legend-dot" style="background:#22c55e;border:1px solid #86efac"></div>เปิดปกติ</div>'+
+    '<div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>ปิดพิเศษ</div>'+
+    '<div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>เปิดพิเศษ 09:00–16:00</div>'+
+    '<div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>เปิดพิเศษ 17:00–21:00</div>'+
+    '<div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>เวลาพิเศษ</div>'+
+    '<div class="legend-item"><div class="legend-dot" style="background:#f1f5f9;border:1px solid #e2e8f0"></div>ปิด</div>'+
+    '</div>'+
+    '<div class="footer">จ–พฤ: 17:00–21:00 น. | ส–อา/วันหยุด: 09:00–16:00 น. | ศ: ปิด</div>'+
+    '<script>'+
+    'var MT='+JSON.stringify(MONTHS_TH)+';'+
+    'var cd='+JSON.stringify(closedDates)+';'+
+    'var od='+JSON.stringify(openDates)+';'+
+    'var dp='+JSON.stringify(daysOpen)+';'+
+    'var DT={0:"09:00\u201316:00",1:"17:00\u201321:00",2:"17:00\u201321:00",3:"17:00\u201321:00",4:"17:00\u201321:00",5:"\u0e1b\u0e34\u0e14",6:"09:00\u201316:00"};'+
+    'var td=new Date();'+
+    'function pZ(n){return String(n).padStart(2,"0");}'+
+    'function rc(){'+
+      'var v=document.getElementById("mp").value.split("-");'+
+      'var y=parseInt(v[0]),m=parseInt(v[1])-1;'+
+      'document.getElementById("cm").textContent=MT[m]+" "+(y+543);'+
+      'var di=new Date(y,m+1,0).getDate(),fd=new Date(y,m,1).getDay();'+
+      'var rows="<tr>";'+
+      'for(var e=0;e<fd;e++)rows+="<td></td>";'+
+      'var col=fd;'+
+      'for(var day=1;day<=di;day++){'+
+        'var dk=y+"-"+pZ(m+1)+"-"+pZ(day);'+
+        'var dow=new Date(y,m,day).getDay();'+
+        'var ic=cd.includes(dk),sp=od[dk],dc=dow===5||!(dp[dow]);'+
+        'var bg="#fff",bc="#e2e8f0",tt="",dot="";'+
+        'if(ic){bg="#fef2f2";bc="#fca5a5";dot="<div class=\'dot red\'></div>";tt="\u0e1b\u0e34\u0e14\u0e1e\u0e34\u0e40\u0e28\u0e29";}'+
+        'else if(sp){if(sp==="open9"){bg="#fef9ec";bc="#fcd34d";dot="<div class=\'dot yellow\'></div>";tt="09:00\u201316:00";}'+
+        'else if(sp==="open17"){bg="#fff7ed";bc="#fed7aa";dot="<div class=\'dot orange\'></div>";tt="17:00\u201321:00";}'+
+        'else if(typeof sp==="object"){bg="#faf5ff";bc="#c4b5fd";dot="<div class=\'dot purple\'></div>";tt=(sp.start||"")+(sp.end?"\u2013"+sp.end:"");}}'+
+        'else if(dc){bg="#f1f5f9";tt="\u0e1b\u0e34\u0e14";}'+
+        'else{tt=DT[dow]||"";}'+
+        'var it=(day===td.getDate()&&m===td.getMonth()&&y===td.getFullYear());'+
+        'var ts=it?"outline:2px solid #0ea5e9;outline-offset:-2px;":"";'+
+        'rows+="<td style=\'background:"+bg+";border-color:"+bc+";"+ts+"\'>"+dot+'+
+        '"<div class=\'day-num"+(dow===0?" sun":"")+(it?" today":"")+"\'>"+day+"</div>"+'+
+        '"<div class=\'day-time\'>"+tt+"</div></td>";'+
+        'col++;if(col%7===0&&day<di)rows+="</tr><tr>";'+
+      '}'+
+      'while(col%7!==0){rows+="<td></td>";col++;}'+
+      'var hdr="<tr>"+["\u0e2d\u0e32","\u0e08","\u0e2d","\u0e1e","\u0e1e\u0e24","\u0e28","\u0e2a"].map(function(d,i){'+
+        'return"<th"+(i===0?" class=\'sun-h\'":" ")+">"+d+"</th>";}).join("")+"</tr>";'+
+      'document.getElementById("cb").innerHTML="<table><thead>"+hdr+"</thead><tbody>"+rows+"</tbody></table>";'+
+    '}'+
+    'rc();'+
+    '<\/script></body></html>');
+  win.document.close();
+};
 </script>
 </body>
 </html>
