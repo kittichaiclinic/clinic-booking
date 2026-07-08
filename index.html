@@ -7675,99 +7675,139 @@ const as = {
 <script>
 window.printCalendar = function(closedDates, openDates, daysOpen) {
   var today = new Date();
-  var MONTHS_TH = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-  var DEFAULT_TIMES = {0:"09:00–16:00",1:"17:00–21:00",2:"17:00–21:00",3:"17:00–21:00",4:"17:00–21:00",5:"ปิด",6:"09:00–16:00"};
-  function padZ(n){return String(n).padStart(2,"0");}
-  function getDays(y,m){return new Date(y,m+1,0).getDate();}
-  function getFirst(y,m){return new Date(y,m,1).getDay();}
+  var MT = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  function pZ(n){return String(n).padStart(2,"0");}
 
   var opts="";
   for(var i=-2;i<=9;i++){
-    var oy=today.getFullYear(),om=today.getMonth()+i;
-    while(om<0){om+=12;oy--;}while(om>11){om-=12;oy++;}
-    var val=oy+"-"+padZ(om+1);
-    opts+="<option value='"+val+"'"+(i===0?" selected":"")+">"+MONTHS_TH[om]+" "+(oy+543)+"</option>";
+    var oy=today.getFullYear(), om=today.getMonth()+i;
+    while(om<0){om+=12;oy--;} while(om>11){om-=12;oy++;}
+    var val=oy+"-"+pZ(om+1);
+    opts+="<option value='"+val+"'"+(i===0?" selected":"")+">"+MT[om]+" "+(oy+543)+"</option>";
   }
 
-  var win=window.open("","_blank","width=1050,height=750");
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ปฏิทินคลินิก</title><style>'+
-    '@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}'+
-    'body{font-family:Sarabun,"Noto Sans Thai",sans-serif;font-size:13px;margin:0;padding:10px;background:#fff}'+
-    '.no-print{display:flex;justify-content:center;gap:12px;margin-bottom:12px;align-items:center}'+
-    '.no-print select{font-family:inherit;font-size:14px;padding:6px 12px;border:1.5px solid #0ea5e9;border-radius:8px;background:#f0f9ff;color:#0369a1;font-weight:600}'+
-    '.no-print button{font-family:inherit;font-size:14px;padding:7px 20px;border:none;border-radius:8px;background:#0ea5e9;color:#fff;font-weight:700;cursor:pointer}'+
-    'h1{text-align:center;font-size:22px;color:#0369a1;margin:0 0 2px;font-weight:800}'+
-    '.month-title{text-align:center;font-size:17px;font-weight:700;color:#0369a1;margin:0 0 8px}'+
-    'table{width:100%;border-collapse:collapse;table-layout:fixed}'+
-    'th{text-align:center;padding:6px 2px;background:#e0f2fe;font-size:12px;color:#0369a1;border:1px solid #bae6fd;font-weight:700}'+
-    'th.sun-h{color:#ef4444}'+
-    'td{border:1px solid #e2e8f0;vertical-align:top;height:72px;padding:4px;position:relative}'+
-    '.day-num{font-weight:700;font-size:16px;color:#1e293b}'+
-    '.day-num.sun{color:#ef4444}.day-num.today{color:#0ea5e9}'+
-    '.day-time{font-size:10px;color:#475569;margin-top:3px}'+
-    '.dot{width:8px;height:8px;border-radius:50%;position:absolute;top:4px;right:4px}'+
-    '.dot.red{background:#ef4444}.dot.yellow{background:#eab308}.dot.orange{background:#f97316}.dot.purple{background:#7c3aed}'+
-    '.legend{display:flex;gap:16px;justify-content:center;margin:10px 0 4px;flex-wrap:wrap}'+
-    '.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#475569}'+
-    '.legend-dot{width:10px;height:10px;border-radius:50%}'+
-    '.footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:8px}'+
-    '@media print{.no-print{display:none!important}body{padding:0}}'+
-    '</style></head><body>'+
-    '<div class="no-print"><select id="mp" onchange="rc()">'+opts+'</select>'+
-    '<button onclick="window.print()">🖨️ พิมพ์</button></div>'+
-    '<h1 id="ct">คลินิกแพทย์กิตติชัย</h1>'+
-    '<div class="month-title" id="cm"></div>'+
-    '<div id="cb"></div>'+
-    '<div class="legend">'+
-    '<div class="legend-item"><div class="legend-dot" style="background:#22c55e;border:1px solid #86efac"></div>เปิดปกติ</div>'+
-    '<div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>ปิดพิเศษ</div>'+
-    '<div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>เปิดพิเศษ 09:00–16:00</div>'+
-    '<div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>เปิดพิเศษ 17:00–21:00</div>'+
-    '<div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>เวลาพิเศษ</div>'+
-    '<div class="legend-item"><div class="legend-dot" style="background:#f1f5f9;border:1px solid #e2e8f0"></div>ปิด</div>'+
-    '</div>'+
-    '<div class="footer">จ–พฤ: 17:00–21:00 น. | ส–อา/วันหยุด: 09:00–16:00 น. | ศ: ปิด</div>'+
-    '<script>'+
-    'var MT='+JSON.stringify(MONTHS_TH)+';'+
-    'var cd='+JSON.stringify(closedDates)+';'+
-    'var od='+JSON.stringify(openDates)+';'+
-    'var dp='+JSON.stringify(daysOpen)+';'+
-    'var DT={0:"09:00\u201316:00",1:"17:00\u201321:00",2:"17:00\u201321:00",3:"17:00\u201321:00",4:"17:00\u201321:00",5:"\u0e1b\u0e34\u0e14",6:"09:00\u201316:00"};'+
-    'var td=new Date();'+
-    'function pZ(n){return String(n).padStart(2,"0");}'+
-    'function rc(){'+
-      'var v=document.getElementById("mp").value.split("-");'+
-      'var y=parseInt(v[0]),m=parseInt(v[1])-1;'+
-      'document.getElementById("cm").textContent=MT[m]+" "+(y+543);'+
-      'var di=new Date(y,m+1,0).getDate(),fd=new Date(y,m,1).getDay();'+
-      'var rows="<tr>";'+
-      'for(var e=0;e<fd;e++)rows+="<td></td>";'+
-      'var col=fd;'+
-      'for(var day=1;day<=di;day++){'+
-        'var dk=y+"-"+pZ(m+1)+"-"+pZ(day);'+
-        'var dow=new Date(y,m,day).getDay();'+
-        'var ic=cd.includes(dk),sp=od[dk],dc=dow===5||!(dp[dow]);'+
-        'var bg="#fff",bc="#e2e8f0",tt="",dot="";'+
-        'if(ic){bg="#fef2f2";bc="#fca5a5";dot="<div class=\'dot red\'></div>";tt="\u0e1b\u0e34\u0e14\u0e1e\u0e34\u0e40\u0e28\u0e29";}'+
-        'else if(sp){if(sp==="open9"){bg="#fef9ec";bc="#fcd34d";dot="<div class=\'dot yellow\'></div>";tt="09:00\u201316:00";}'+
-        'else if(sp==="open17"){bg="#fff7ed";bc="#fed7aa";dot="<div class=\'dot orange\'></div>";tt="17:00\u201321:00";}'+
-        'else if(typeof sp==="object"){bg="#faf5ff";bc="#c4b5fd";dot="<div class=\'dot purple\'></div>";tt=(sp.start||"")+(sp.end?"\u2013"+sp.end:"");}}'+
-        'else if(dc){bg="#f1f5f9";tt="\u0e1b\u0e34\u0e14";}'+
-        'else{tt=DT[dow]||"";}'+
-        'var it=(day===td.getDate()&&m===td.getMonth()&&y===td.getFullYear());'+
-        'var ts=it?"outline:2px solid #0ea5e9;outline-offset:-2px;":"";'+
-        'rows+="<td style=\'background:"+bg+";border-color:"+bc+";"+ts+"\'>"+dot+'+
-        '"<div class=\'day-num"+(dow===0?" sun":"")+(it?" today":"")+"\'>"+day+"</div>"+'+
-        '"<div class=\'day-time\'>"+tt+"</div></td>";'+
-        'col++;if(col%7===0&&day<di)rows+="</tr><tr>";'+
-      '}'+
-      'while(col%7!==0){rows+="<td></td>";col++;}'+
-      'var hdr="<tr>"+["\u0e2d\u0e32","\u0e08","\u0e2d","\u0e1e","\u0e1e\u0e24","\u0e28","\u0e2a"].map(function(d,i){'+
-        'return"<th"+(i===0?" class=\'sun-h\'":" ")+">"+d+"</th>";}).join("")+"</tr>";'+
-      'document.getElementById("cb").innerHTML="<table><thead>"+hdr+"</thead><tbody>"+rows+"</tbody></table>";'+
-    '}'+
-    'rc();'+
-    '<\/script></body></html>');
+  var cdJSON   = JSON.stringify(closedDates);
+  var odJSON   = JSON.stringify(openDates);
+  var dpJSON   = JSON.stringify(daysOpen);
+  var mtJSON   = JSON.stringify(MT);
+
+  var css = [
+    "@page{size:A4 landscape;margin:8mm}",
+    "*{box-sizing:border-box;margin:0;padding:0}",
+    "body{font-family:Sarabun,'Noto Sans Thai',sans-serif;background:#fff;padding:8mm}",
+    ".no-print{display:flex;justify-content:center;gap:12px;margin-bottom:10px;align-items:center}",
+    ".no-print select{font-family:inherit;font-size:14px;padding:6px 12px;border:1.5px solid #0ea5e9;border-radius:8px;background:#f0f9ff;color:#0369a1;font-weight:600}",
+    ".no-print button{font-family:inherit;font-size:14px;padding:7px 22px;border:none;border-radius:8px;background:#0ea5e9;color:#fff;font-weight:700;cursor:pointer}",
+    ".header{text-align:center;margin-bottom:5mm;padding-bottom:4mm;border-bottom:1.5px solid #bae6fd}",
+    ".clinic-name{font-size:20pt;font-weight:800;color:#0369a1;line-height:1.1}",
+    ".month-badge{display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border-radius:12px;padding:5px 28px;margin-top:3mm;box-shadow:0 2px 8px rgba(3,105,161,.25)}",
+    ".month-badge .month{font-size:15pt;font-weight:800;line-height:1.1}",
+    ".legend{display:flex;gap:14px;margin-bottom:5mm;flex-wrap:wrap;align-items:center}",
+    ".legend-item{display:flex;align-items:center;gap:6px;font-size:10pt;color:#374151;font-weight:600}",
+    ".legend-box{width:16px;height:16px;border-radius:4px;flex-shrink:0}",
+    "table{width:100%;border-collapse:separate;border-spacing:2px;table-layout:fixed}",
+    "th{text-align:center;padding:7px 4px;font-size:11pt;font-weight:700;border-radius:6px}",
+    "th.sun-h{background:#fee2e2;color:#dc2626}",
+    "th.fri-h{background:#f1f5f9;color:#94a3b8}",
+    "th.sat-h{background:#eff6ff;color:#1d4ed8}",
+    "th.week-h{background:#e0f2fe;color:#0369a1}",
+    "td{border-radius:8px;vertical-align:top;height:21mm;padding:4px 6px}",
+    ".c-normal{background:#f8fcff;border:1.5px solid #e0f2fe}",
+    ".c-closed{background:#f1f5f9;border:1.5px solid #cbd5e1}",
+    ".c-closed-sp{background:#fff1f2;border:2px solid #fda4af}",
+    ".c-open9{background:#fefce8;border:2px solid #fcd34d}",
+    ".c-open17{background:#fff7ed;border:2px solid #fed7aa}",
+    ".c-custom{background:#faf5ff;border:2px solid #c4b5fd}",
+    ".day-num{font-size:18pt;font-weight:800;line-height:1;margin-bottom:1px}",
+    ".num-sun{color:#dc2626}.num-sat{color:#1d4ed8}.num-week{color:#1e293b}.num-grey{color:#cbd5e1}",
+    ".day-time{font-size:11.5pt;font-weight:700;line-height:1.3;color:#0369a1}",
+    ".t-closed{color:#64748b;font-weight:700;letter-spacing:1px}",
+    ".t-red{color:#be123c}.t-amber{color:#92400e}.t-purple{color:#6d28d9}",
+    ".note{font-size:8pt;font-weight:600;margin-top:2px;line-height:1.3;color:#6d28d9}",
+    ".footer{display:flex;justify-content:space-between;align-items:center;margin-top:5mm;padding-top:3mm;border-top:1.5px solid #bae6fd;font-size:9pt;color:#64748b;font-weight:600}",
+    "@media print{.no-print{display:none!important}body{padding:0}}"
+  ].join("");
+
+  var legend = [
+    "<div class='legend-item'><div class='legend-box' style='background:#f8fcff;border:1.5px solid #7dd3fc'></div>เปิดปกติ</div>",
+    "<div class='legend-item'><div class='legend-box' style='background:#fff1f2;border:2px solid #fda4af'></div>ปิดพิเศษ</div>",
+    "<div class='legend-item'><div class='legend-box' style='background:#fefce8;border:2px solid #fcd34d'></div>เปิดพิเศษ 09:00–16:00</div>",
+    "<div class='legend-item'><div class='legend-box' style='background:#fff7ed;border:2px solid #fed7aa'></div>เปิดพิเศษ 17:00–21:00</div>",
+    "<div class='legend-item'><div class='legend-box' style='background:#faf5ff;border:2px solid #c4b5fd'></div>เวลาพิเศษ</div>",
+    "<div class='legend-item'><div class='legend-box' style='background:#f1f5f9;border:1.5px solid #cbd5e1'></div>ปิด</div>"
+  ].join("");
+
+  var innerScript = "(function(){"
+    + "var MT=" + mtJSON + ";"
+    + "var cd=" + cdJSON + ";"
+    + "var od=" + odJSON + ";"
+    + "var dp=" + dpJSON + ";"
+    + "var DT={0:'09:00\u201316:00',1:'17:00\u201321:00',2:'17:00\u201321:00',3:'17:00\u201321:00',4:'17:00\u201321:00',5:'\u0e1b\u0e34\u0e14',6:'09:00\u201316:00'};"
+    + "var NC=['num-sun','num-week','num-week','num-week','num-week','num-grey','num-sat'];"
+    + "function pZ(n){return String(n).padStart(2,'0');}"
+    + "function rc(){"
+    +   "var v=document.getElementById('mp').value.split('-');"
+    +   "var y=parseInt(v[0]),m=parseInt(v[1])-1;"
+    +   "document.getElementById('cm').textContent=MT[m]+' \u0e1e.\u0e28. '+(y+543);"
+    +   "var di=new Date(y,m+1,0).getDate(),fd=new Date(y,m,1).getDay();"
+    +   "var rows='';"
+    +   "var hdr='<tr><th class=\"sun-h\">\u0e2d\u0e32\u0e17\u0e34\u0e15\u0e22\u0e4c</th><th class=\"week-h\">\u0e08\u0e31\u0e19\u0e17\u0e23\u0e4c</th><th class=\"week-h\">\u0e2d\u0e31\u0e07\u0e04\u0e32\u0e23</th><th class=\"week-h\">\u0e1e\u0e38\u0e18</th><th class=\"week-h\">\u0e1e\u0e24\u0e2b\u0e31\u0e2a\u0e1a\u0e14\u0e35</th><th class=\"fri-h\">\u0e28\u0e38\u0e01\u0e23\u0e4c</th><th class=\"sat-h\">\u0e40\u0e2a\u0e32\u0e23\u0e4c</th></tr>';"
+    +   "rows='<tr>';"
+    +   "for(var e=0;e<fd;e++)rows+='<td></td>';"
+    +   "var col=fd;"
+    +   "for(var day=1;day<=di;day++){"
+    +     "var dk=y+'-'+pZ(m+1)+'-'+pZ(day);"
+    +     "var dow=new Date(y,m,day).getDay();"
+    +     "var ic=cd.includes(dk),sp=od[dk],isOff=!(dp[dow]);"
+    +     "var cls='c-normal',tt='',tcls='',note='';"
+    +     "if(ic){cls='c-closed-sp';tt='\u0e1b\u0e34\u0e14\u0e1e\u0e34\u0e40\u0e28\u0e29';tcls='t-red';}"
+    +     "else if(sp){"
+    +       "if(sp==='open9'){cls='c-open9';tt='09:00\u201316:00';tcls='t-amber';}"
+    +       "else if(sp==='open17'){cls='c-open17';tt='17:00\u201321:00';tcls='t-amber';}"
+    +       "else if(typeof sp==='object'){cls='c-custom';tt=(sp.start||'')+(sp.end?'\u2013'+sp.end:'');tcls='t-purple';}"
+    +     "}"
+    +     "else if(isOff){cls='c-closed';tt='\u0e1b\u0e34\u0e14';tcls='t-closed';}"
+    +     "else{tt=DT[dow]||'';}"
+    +     "var nc=NC[dow];"
+    +     "rows+='<td class=\"'+cls+'\">';"
+    +     "rows+='<div class=\"day-num '+nc+'\">'+day+'</div>';"
+    +     "rows+='<div class=\"day-time '+tcls+'\">'+tt+'</div>';"
+    +     "if(note)rows+='<div class=\"note\">'+note+'</div>';"
+    +     "rows+='</td>';"
+    +     "col++;if(col%7===0&&day<di)rows+='</tr><tr>';"
+    +   "}"
+    +   "while(col%7!==0){rows+='<td></td>';col++;}"
+    +   "document.getElementById('cb').innerHTML='<table><thead>'+hdr+'</thead><tbody>'+rows+'</tbody></table>';"
+    +   "var now=new Date();"
+    +   "document.getElementById('pdate').textContent='\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e21\u0e37\u0e48\u0e2d '+now.getDate()+'/'+pZ(now.getMonth()+1)+'/'+(now.getFullYear()+543);"
+    + "}"
+    + "window.onload=rc;"
+    + "})();";
+
+  var bodyHTML = [
+    "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>\u0e1b\u0e0f\u0e34\u0e17\u0e34\u0e19\u0e04\u0e25\u0e34\u0e19\u0e34\u0e01</title>",
+    "<style>",css,"</style></head><body>",
+    "<div class='no-print'>",
+    "<select id='mp' onchange='rc()'>",opts,"</select>",
+    "<button onclick='window.print()'>\u0e1e\u0e34\u0e21\u0e1e\u0e4c</button>",
+    "</div>",
+    "<div class='header'>",
+    "<div class='clinic-name'>\u0e04\u0e25\u0e34\u0e19\u0e34\u0e01\u0e41\u0e1e\u0e17\u0e22\u0e4c\u0e01\u0e34\u0e15\u0e15\u0e34\u0e0a\u0e31\u0e22</div>",
+    "<div class='month-badge'><div class='month' id='cm'></div></div>",
+    "</div>",
+    "<div class='legend'>",legend,"</div>",
+    "<div id='cb'></div>",
+    "<div class='footer'>",
+    "<span>\u0e42\u0e17\u0e23. 083-236-9410</span>",
+    "<span>\u0e08\u0e31\u0e19\u0e17\u0e23\u0e4c\u2013\u0e1e\u0e24\u0e2b\u0e31\u0e2a: 17:00\u201321:00 \u0e19. &nbsp;&middot;&nbsp; \u0e40\u0e2a\u0e32\u0e23\u0e4c\u2013\u0e2d\u0e32\u0e17\u0e34\u0e15\u0e22\u0e4c: 09:00\u201316:00 \u0e19. &nbsp;&middot;&nbsp; (\u0e15\u0e32\u0e21\u0e15\u0e32\u0e23\u0e32\u0e07\u0e17\u0e35\u0e48\u0e15\u0e31\u0e49\u0e07\u0e44\u0e27\u0e49)</span>",
+    "<span id='pdate'></span>",
+    "</div>",
+    "<script>",innerScript,"<\/script>",
+    "</body></html>"
+  ].join("");
+
+  var win = window.open("","_blank","width=1120,height=800");
+  win.document.write(bodyHTML);
   win.document.close();
 };
 </script>
